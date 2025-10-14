@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | TJ Clicks Studio</title>
+    <link rel="icon" type="image/png" href="Image/favicon.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f5f7fa;
+            color: #2C3E50;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 260px;
+            height: 100vh;
+            background: linear-gradient(135deg, #2C3E50 0%, #34495e 100%);
+            color: white;
+            padding: 20px 0;
+            z-index: 1000;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .sidebar-header h2 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .sidebar-menu {
+            list-style: none;
+        }
+
+        .sidebar-menu li {
+            margin: 5px 0;
+        }
+
+        .sidebar-menu a {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-menu a:hover,
+        .sidebar-menu a.active {
+            background: rgba(212, 165, 116, 0.2);
+            color: white;
+            border-left: 4px solid #D4A574;
+        }
+
+        .sidebar-menu i {
+            font-size: 1.2rem;
+            width: 25px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(231, 76, 60, 0.3);
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 260px;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .topbar {
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .topbar h1 {
+            font-size: 1.8rem;
+            color: #2C3E50;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-avatar {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            color: white;
+        }
+
+        .stat-icon.photos {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-icon.portfolio {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-icon.services {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .stat-icon.testimonials {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+
+        .stat-details h3 {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            color: #2C3E50;
+        }
+
+        .stat-details p {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+        }
+
+        /* Content Sections */
+        .content-section {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .section-header h2 {
+            font-size: 1.5rem;
+            color: #2C3E50;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(212, 165, 116, 0.3);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-success {
+            background: #27ae60;
+            color: white;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ecf0f1;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #D4A574;
+            box-shadow: 0 0 10px rgba(212, 165, 116, 0.2);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        /* Photo Gallery Grid */
+        .photo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .photo-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .photo-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .photo-item img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .photo-item .photo-actions {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 15px 10px 10px;
+            display: flex;
+            justify-content: space-between;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .photo-item:hover .photo-actions {
+            opacity: 1;
+        }
+
+        .photo-actions button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .photo-actions .btn-edit {
+            background: #3498db;
+            color: white;
+        }
+
+        .photo-actions .btn-delete {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #bdc3c7;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            border-color: #D4A574;
+            background: rgba(212, 165, 116, 0.05);
+        }
+
+        .upload-area i {
+            font-size: 3rem;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+        }
+
+        .upload-area.dragover {
+            border-color: #D4A574;
+            background: rgba(212, 165, 116, 0.1);
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .data-table th,
+        .data-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ecf0f1;
+        }
+
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .data-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .table-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .table-actions button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        /* Alert Messages */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        /* Mobile Menu Toggle */
+        .mobile-menu-toggle {
+            display: none;
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1001;
+            background: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 968px) {
+            .sidebar {
+                left: -260px;
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .topbar {
+                padding: 15px 20px;
+                margin-left: 60px;
+            }
+
+            .topbar h1 {
+                font-size: 1.3rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .photo-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+                gap: 15px;
+            }
+
+            .content-section {
+                padding: 20px;
+            }
+
+            .table-actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Mobile Menu Toggle -->
+    <button class="mobile-menu-toggle" id="mobileMenuToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h2>TJ Clicks</h2>
+            <p>Admin Dashboard</p>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li>
+                <a href="#" class="menu-link active" data-section="dashboard">
+                    <i class="fas fa-th-large"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="photos">
+                    <i class="fas fa-images"></i>
+                    <span>Manage Photos</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="portfolio">
+                    <i class="fas fa-camera"></i>
+                    <span>Portfolio Items</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="services">
+                    <i class="fas fa-briefcase"></i>
+                    <span>Services</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="testimonials">
+                    <i class="fas fa-quote-left"></i>
+                    <span>Testimonials</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="about">
+                    <i class="fas fa-info-circle"></i>
+                    <span>About Info</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="contact">
+                    <i class="fas fa-envelope"></i>
+                    <span>Contact Info</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="menu-link" data-section="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </li>
+        </ul>
+
+        <div class="logout-btn" onclick="logout()">
+            <i class="fas fa-sign-out-alt"></i> Logout
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Topbar -->
+        <div class="topbar">
+            <h1 id="pageTitle">Dashboard</h1>
+            <div class="user-info">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div>
+                    <strong>Admin</strong>
+                    <br>
+                    <small>Administrator</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="content-section active" id="dashboard">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon photos">
+                        <i class="fas fa-images"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>24</h3>
+                        <p>Total Photos</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon portfolio">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>4</h3>
+                        <p>Portfolio Items</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon services">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>7</h3>
+                        <p>Services Offered</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon testimonials">
+                        <i class="fas fa-quote-left"></i>
+                    </div>
+                    <div class="stat-details">
+                        <h3>6</h3>
+                        <p>Testimonials</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="content-section active">
+                <div class="section-header">
+                    <h2>Quick Actions</h2>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <button class="btn btn-primary" onclick="showSection('photos')">
+                        <i class="fas fa-plus"></i> Add New Photo
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('portfolio')">
+                        <i class="fas fa-camera"></i> Manage Portfolio
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('services')">
+                        <i class="fas fa-edit"></i> Update Services
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('testimonials')">
+                        <i class="fas fa-quote-left"></i> Add Testimonial
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Manage Photos Section -->
+        <div class="content-section" id="photos">
+            <div class="alert alert-success" id="photoAlert"></div>
+            
+            <div class="section-header">
+                <h2>Manage Photos</h2>
+            </div>
+
+            <!-- Upload Form with Category -->
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin-bottom: 25px;">
+                <h3 style="margin-bottom: 15px;">Upload New Photos</h3>
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label>Select Category</label>
+                        <select id="photoCategory" required>
+                            <option value="">Choose a category</option>
+                            <option value="Wedding">Wedding Photography</option>
+                            <option value="Maternity">Maternity Photography</option>
+                            <option value="Portrait">Portrait Photography</option>
+                            <option value="Commercial">Commercial Photography</option>
+                            <option value="PreWedding">Pre-Wedding Shoots</option>
+                            <option value="Newborn">Newborn Baby Photography</option>
+                        </select>
+                    </div>
+
+                    <div class="upload-area" id="uploadArea">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <h3>Drop photos here or click to upload</h3>
+                        <p>Supports: JPG, PNG, GIF (Max 5MB)</p>
+                        <input type="file" id="photoUpload" accept="image/*" multiple hidden>
+                    </div>
+
+                    <button type="button" class="btn btn-primary" onclick="uploadPhotos()">
+                        <i class="fas fa-upload"></i> Upload Photos
+                    </button>
+                </form>
+            </div>
+
+            <!-- Category Filter -->
+            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <strong style="margin-right: 10px;">Filter by Category:</strong>
+                <button class="btn btn-primary" onclick="filterPhotos('all')" style="padding: 8px 16px;">All Photos</button>
+                <button class="btn" onclick="filterPhotos('Wedding')" style="padding: 8px 16px; background: #e74c3c; color: white;">Wedding</button>
+                <button class="btn" onclick="filterPhotos('Maternity')" style="padding: 8px 16px; background: #f39c12; color: white;">Maternity</button>
+                <button class="btn" onclick="filterPhotos('Portrait')" style="padding: 8px 16px; background: #9b59b6; color: white;">Portrait</button>
+                <button class="btn" onclick="filterPhotos('Commercial')" style="padding: 8px 16px; background: #3498db; color: white;">Commercial</button>
+                <button class="btn" onclick="filterPhotos('PreWedding')" style="padding: 8px 16px; background: #1abc9c; color: white;">Pre-Wedding</button>
+                <button class="btn" onclick="filterPhotos('Newborn')" style="padding: 8px 16px; background: #e91e63; color: white;">Newborn</button>
+            </div>
+
+            <div id="photoCount" style="margin-bottom: 15px; font-weight: 600; color: #666;">
+                Total Photos: <span id="totalCount">4</span>
+            </div>
+
+            <div class="photo-grid" id="photoGrid">
+                <!-- Photos will be dynamically loaded here -->
+                <div class="photo-item" data-category="Wedding">
+                    <img src="Image/Wedding.jpg" alt="Wedding Photo">
+                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: #e74c3c; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">Wedding</div>
+                    <div class="photo-actions">
+                        <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="photo-item" data-category="Maternity">
+                    <img src="Image/Maternity.jpg" alt="Maternity Photo">
+                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: #f39c12; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">Maternity</div>
+                    <div class="photo-actions">
+                        <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="photo-item" data-category="Portrait">
+                    <img src="Image/Portrait.jpg" alt="Portrait Photo">
+                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: #9b59b6; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">Portrait</div>
+                    <div class="photo-actions">
+                        <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="photo-item" data-category="Commercial">
+                    <img src="Image/Commercial-Photoshoot.jpg" alt="Commercial Photo">
+                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: #3498db; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">Commercial</div>
+                    <div class="photo-actions">
+                        <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                        <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portfolio Section -->
+        <div class="content-section" id="portfolio">
+            <div class="alert alert-success" id="portfolioAlert"></div>
+            
+            <div class="section-header">
+                <h2>Portfolio Items</h2>
+                <button class="btn btn-primary" onclick="showAddPortfolioForm()">
+                    <i class="fas fa-plus"></i> Add Portfolio Item
+                </button>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Image</th>
+                        <th>Title</th>
+                        <th>Description</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><img src="Image/Wedding.jpg" width="60" style="border-radius: 5px;"></td>
+                        <td>Wedding Photography</td>
+                        <td>Beautiful couple in Jaipur...</td>
+                        <td class="table-actions">
+                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><img src="Image/Maternity.jpg" width="60" style="border-radius: 5px;"></td>
+                        <td>Maternity Photography</td>
+                        <td>Celebrating motherhood...</td>
+                        <td class="table-actions">
+                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Services Section -->
+        <div class="content-section" id="services">
+            <div class="alert alert-success" id="servicesAlert"></div>
+            
+            <div class="section-header">
+                <h2>Manage Services</h2>
+                <button class="btn btn-primary" onclick="addServiceField()">
+                    <i class="fas fa-plus"></i> Add Service
+                </button>
+            </div>
+
+            <form id="servicesForm">
+                <div id="servicesList">
+                    <div class="form-group">
+                        <label>Service 1</label>
+                        <input type="text" value="Pre-Wedding Shoots" class="service-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Service 2</label>
+                        <input type="text" value="Wedding Photography" class="service-input">
+                    </div>
+                    <div class="form-group">
+                        <label>Service 3</label>
+                        <input type="text" value="Newborn Baby Photography" class="service-input">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Services
+                </button>
+            </form>
+        </div>
+
+        <!-- Testimonials Section -->
+        <div class="content-section" id="testimonials">
+            <div class="alert alert-success" id="testimonialsAlert"></div>
+            
+            <div class="section-header">
+                <h2>Manage Testimonials</h2>
+            </div>
+
+            <form id="testimonialForm">
+                <div class="form-group">
+                    <label>Client Name</label>
+                    <input type="text" id="clientName" placeholder="Enter client name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Testimonial Text</label>
+                    <textarea id="testimonialText" placeholder="Enter testimonial text" required></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add Testimonial
+                </button>
+            </form>
+
+            <table class="data-table" style="margin-top: 30px;">
+                <thead>
+                    <tr>
+                        <th>Client Name</th>
+                        <th>Testimonial</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="testimonialsTable">
+                    <tr>
+                        <td>Shobit & Kavita</td>
+                        <td>Tejender was amazing! She made us feel so comfortable...</td>
+                        <td class="table-actions">
+                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
+                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- About Info Section -->
+        <div class="content-section" id="about">
+            <div class="alert alert-success" id="aboutAlert"></div>
+            
+            <div class="section-header">
+                <h2>Update About Information</h2>
+            </div>
+
+            <form id="aboutForm">
+                <div class="form-group">
+                    <label>About Title</label>
+                    <input type="text" value="About Me" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Main Description</label>
+                    <textarea required>Hi! I'm Tejender Kaur, a freelance photographer based in Jaipur, Rajasthan...</textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Additional Info</label>
+                    <textarea>With a relaxed approach and a keen eye for detail...</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Update About Info
+                </button>
+            </form>
+        </div>
+
+        <!-- Contact Info Section -->
+        <div class="content-section" id="contact">
+            <div class="alert alert-success" id="contactAlert"></div>
+            
+            <div class="section-header">
+                <h2>Update Contact Information</h2>
+            </div>
+
+            <form id="contactForm">
+                <div class="form-group">
+                    <label>Phone Number</label>
+                    <input type="tel" value="+91 9782978298" required>
+                </div>
+
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input type="tel" value="+91 9782978298" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" value="tjclickstudio@gmail.com" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Instagram Handle</label>
+                    <input type="text" value="@click_it_9782" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Studio Address</label>
+                    <textarea required>456 Jagatpura Lens Street, Near CBI Fathak, Jaipur, Rajasthan 303505</textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Update Contact Info
+                </button>
+            </form>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="content-section" id="settings">
+            <div class="alert alert-success" id="settingsAlert"></div>
+            
+            <div class="section-header">
+                <h2>Settings</h2>
+            </div>
+
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label>Website Title</label>
+                    <input type="text" value="TJ Clicks Studio" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Change Password</label>
+                    <input type="password" placeholder="Enter new password">
+                </div>
+
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="password" placeholder="Confirm new password">
+                </div>
+
+                <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Save Settings
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Check if user is logged in
+        if (!sessionStorage.getItem('adminLoggedIn')) {
+            window.location.href = 'admin-login.html';
+        }
+
+        // Mobile menu toggle
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const sidebar = document.getElementById('sidebar');
+
+        mobileMenuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('active');
+        });
+
+        // Menu navigation
+        const menuLinks = document.querySelectorAll('.menu-link');
+        const contentSections = document.querySelectorAll('.content-section');
+        const pageTitle = document.getElementById('pageTitle');
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                menuLinks.forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked link
+                this.classList.add('active');
+                
+                // Get section to show
+                const sectionId = this.getAttribute('data-section');
+                showSection(sectionId);
+                
+                // Close mobile menu
+                sidebar.classList.remove('active');
+            });
+        });
+
+        function showSection(sectionId) {
+            // Hide all sections
+            contentSections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Show selected section
+            const targetSection = document.getElementById(sectionId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+                
+                // Update page title
+                const titles = {
+                    'dashboard': 'Dashboard',
+                    'photos': 'Manage Photos',
+                    'portfolio': 'Portfolio Items',
+                    'services': 'Manage Services',
+                    'testimonials': 'Manage Testimonials',
+                    'about': 'About Information',
+                    'contact': 'Contact Information',
+                    'settings': 'Settings'
+                };
+                pageTitle.textContent = titles[sectionId] || 'Dashboard';
+            }
+        }
+
+        // Logout function
+        function logout() {
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.removeItem('adminLoggedIn');
+                window.location.href = 'admin-login.html';
+            }
+        }
+
+        // Photo upload functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const photoUpload = document.getElementById('photoUpload');
+
+        uploadArea.addEventListener('click', () => {
+            photoUpload.click();
+        });
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            handleFiles(files);
+        });
+
+        photoUpload.addEventListener('change', (e) => {
+            const files = e.target.files;
+            handleFiles(files);
+        });
+
+        function handleFiles(files) {
+            const photoAlert = document.getElementById('photoAlert');
+            photoAlert.textContent = `${files.length} photo(s) uploaded successfully!`;
+            photoAlert.style.display = 'block';
+            
+            setTimeout(() => {
+                photoAlert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Services form
+        const servicesForm = document.getElementById('servicesForm');
+        servicesForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const alert = document.getElementById('servicesAlert');
+            alert.textContent = 'Services updated successfully!';
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        });
+
+        // Add service field
+        function addServiceField() {
+            const servicesList = document.getElementById('servicesList');
+            const serviceCount = servicesList.querySelectorAll('.form-group').length + 1;
+            
+            const newService = document.createElement('div');
+            newService.className = 'form-group';
+            newService.innerHTML = `
+                <label>Service ${serviceCount}</label>
+                <input type="text" placeholder="Enter service name" class="service-input">
+            `;
+            
+            servicesList.appendChild(newService);
+        }
+
+        // Testimonials form
+        const testimonialForm = document.getElementById('testimonialForm');
+        testimonialForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const clientName = document.getElementById('clientName').value;
+            const testimonialText = document.getElementById('testimonialText').value;
+            
+            const table = document.getElementById('testimonialsTable');
+            const newRow = table.insertRow();
+            newRow.innerHTML = `
+                <td>${clientName}</td>
+                <td>${testimonialText.substring(0, 50)}...</td>
+                <td class="table-actions">
+                    <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
+                    <button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i> Delete</button>
+                </td>
+            `;
+            
+            // Show success message
+            const alert = document.getElementById('testimonialsAlert');
+            alert.textContent = 'Testimonial added successfully!';
+            alert.style.display = 'block';
+            
+            // Reset form
+            testimonialForm.reset();
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        });
+
+        // About form
+        const aboutForm = document.getElementById('aboutForm');
+        aboutForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const alert = document.getElementById('aboutAlert');
+            alert.textContent = 'About information updated successfully!';
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        });
+
+        // Contact form
+        const contactForm = document.getElementById('contactForm');
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const alert = document.getElementById('contactAlert');
+            alert.textContent = 'Contact information updated successfully!';
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        });
+
+        // Settings form
+        const settingsForm = document.getElementById('settingsForm');
+        settingsForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const alert = document.getElementById('settingsAlert');
+            alert.textContent = 'Settings saved successfully!';
+            alert.style.display = 'block';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 3000);
+        });
+
+        // Delete row function
+        function deleteRow(btn) {
+            if (confirm('Are you sure you want to delete this item?')) {
+                const row = btn.closest('tr');
+                row.remove();
+            }
+        }
+
+        // Add delete functionality to existing buttons
+        document.querySelectorAll('.btn-delete').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (confirm('Are you sure you want to delete this item?')) {
+                    const item = this.closest('tr') || this.closest('.photo-item');
+                    if (item) {
+                        item.remove();
+                    }
+                }
+            });
+        });
+
+        // Upload Photos Function
+        function uploadPhotos() {
+            const category = document.getElementById('photoCategory').value;
+            const files = document.getElementById('photoUpload').files;
+            
+            if (!category) {
+                alert('Please select a category first!');
+                return;
+            }
+            
+            if (files.length === 0) {
+                alert('Please select photos to upload!');
+                return;
+            }
+            
+            const photoGrid = document.getElementById('photoGrid');
+            const photoAlert = document.getElementById('photoAlert');
+            
+            // Category colors
+            const categoryColors = {
+                'Wedding': '#e74c3c',
+                'Maternity': '#f39c12',
+                'Portrait': '#9b59b6',
+                'Commercial': '#3498db',
+                'PreWedding': '#1abc9c',
+                'Newborn': '#e91e63'
+            };
+            
+            // Process each file
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'photo-item';
+                    photoItem.setAttribute('data-category', category);
+                    
+                    photoItem.innerHTML = `
+                        <img src="${e.target.result}" alt="${category} Photo">
+                        <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[category]}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">${category}</div>
+                        <div class="photo-actions">
+                            <button class="btn-edit"><i class="fas fa-edit"></i></button>
+                            <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                    `;
+                    
+                    photoGrid.appendChild(photoItem);
+                };
+                
+                reader.readAsDataURL(file);
+            }
+            
+            // Show success message
+            photoAlert.textContent = `${files.length} photo(s) uploaded successfully to ${category} category!`;
+            photoAlert.style.display = 'block';
+            
+            // Reset form
+            document.getElementById('uploadForm').reset();
+            document.getElementById('photoUpload').value = '';
+            
+            // Update photo count
+            updatePhotoCount();
+            
+            setTimeout(() => {
+                photoAlert.style.display = 'none';
+            }, 3000);
+        }
+
+        // Filter Photos by Category
+        function filterPhotos(category) {
+            const photoItems = document.querySelectorAll('.photo-item');
+            let visibleCount = 0;
+            
+            photoItems.forEach(item => {
+                if (category === 'all') {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    if (item.getAttribute('data-category') === category) {
+                        item.style.display = 'block';
+                        visibleCount++;
+                    } else {
+                        item.style.display = 'none';
+                    }
+                }
+            });
+            
+            // Update count display
+            document.getElementById('totalCount').textContent = visibleCount;
+        }
+
+        // Delete Photo Function
+        function deletePhoto(btn) {
+            if (confirm('Are you sure you want to delete this photo?')) {
+                const photoItem = btn.closest('.photo-item');
+                photoItem.remove();
+                updatePhotoCount();
+                
+                const photoAlert = document.getElementById('photoAlert');
+                photoAlert.textContent = 'Photo deleted successfully!';
+                photoAlert.style.display = 'block';
+                
+                setTimeout(() => {
+                    photoAlert.style.display = 'none';
+                }, 2000);
+            }
+        }
+
+        // Update Photo Count
+        function updatePhotoCount() {
+            const totalPhotos = document.querySelectorAll('.photo-item').length;
+            document.getElementById('totalCount').textContent = totalPhotos;
+        }
+
+        // Initialize photo count on page load
+        updatePhotoCount();
+    </script>
+</body>
+</html>
