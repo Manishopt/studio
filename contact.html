@@ -23,14 +23,19 @@
         }
 
         :root {
-            --primary: #D4A574;
+            --primary: #ffb6c1; /* pink */
             --secondary: #2C3E50;
             --accent: #0891B2;
             --light: #F8F9FA;
             --dark: #1a1a1a;
             --white: #ffffff;
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-            --gradient: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            --gradient: linear-gradient(135deg, #ffb6c1 0%, #0891B2 100%); /* pink start */
+        }
+
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
         }
 
         body {
@@ -39,6 +44,8 @@
             color: var(--secondary);
             line-height: 1.6;
             min-height: 100vh;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         /* Navigation */
@@ -82,12 +89,12 @@
             font-weight: 500;
             font-size: 0.9rem;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 4px 15px rgba(255,182,193,0.3); /* pink shadow */
         }
 
         .nav-back:hover {
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+            box-shadow: 0 6px 20px rgba(255,182,193,0.4);
         }
 
         /* Hero Section */
@@ -132,11 +139,10 @@
 
         /* Main Container */
         .container {
-            max-width: 1200px;
-            margin: -20px auto 50px;
-            padding: 0 30px;
-            position: relative;
-            z-index: 2;
+            width: min(100% - 20px, 1200px);
+            margin-inline: auto;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         /* Contact Grid */
@@ -145,6 +151,8 @@
             grid-template-columns: 1fr 1fr;
             gap: 30px;
             margin-bottom: 40px;
+            width: 100%;
+            box-sizing: border-box;
         }
 
         /* Contact Cards */
@@ -155,6 +163,9 @@
             box-shadow: var(--shadow);
             transition: all 0.3s ease;
             animation: fadeIn 0.6s ease;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
         }
 
         .contact-card:hover {
@@ -201,7 +212,7 @@
             color: var(--white);
             font-size: 1.5rem;
             flex-shrink: 0;
-            box-shadow: 0 5px 15px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3); /* pink shadow */
         }
 
         .contact-details h3 {
@@ -252,23 +263,23 @@
         .btn-primary {
             background: var(--gradient);
             color: var(--white);
-            box-shadow: 0 5px 15px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3);
         }
 
         .btn-primary:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(212, 165, 116, 0.4);
+            box-shadow: 0 8px 20px rgba(255,182,193,0.4);
         }
 
         .btn-secondary {
-            background: #25D366;
+            background: var(--gradient);
             color: var(--white);
-            box-shadow: 0 5px 15px rgba(37, 211, 102, 0.3);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3);
         }
 
         .btn-secondary:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(37, 211, 102, 0.4);
+            box-shadow: 0 8px 20px rgba(255,182,193,0.4);
         }
 
         /* Map Section */
@@ -279,6 +290,9 @@
             padding: 40px;
             box-shadow: var(--shadow);
             animation: fadeIn 0.8s ease 0.2s both;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
         }
 
         .map-card h2 {
@@ -340,6 +354,9 @@
             padding: 40px;
             box-shadow: var(--shadow);
             animation: fadeIn 1s ease 0.4s both;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
         }
 
         .form-card h2 {
@@ -388,7 +405,7 @@
         .form-group textarea:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
+            box-shadow: 0 0 15px rgba(255,182,193,0.2);
         }
 
         .form-group textarea {
@@ -408,12 +425,13 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3);
         }
 
         .submit-btn:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(212, 165, 116, 0.4);
+            box-shadow: 0 8px 20px rgba(255,182,193,0.4);
+            background: #e599b0; /* darker pink hover */
         }
 
         /* Social Media */
@@ -425,6 +443,9 @@
             box-shadow: var(--shadow);
             text-align: center;
             animation: fadeIn 1.2s ease 0.6s both;
+            width: 100%;
+            box-sizing: border-box;
+            margin: 10px 0;
         }
 
         .social-card h2 {
@@ -459,20 +480,11 @@
             transform: translateY(-10px) scale(1.1);
         }
 
-        .social-btn.instagram {
-            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
-        }
-
-        .social-btn.whatsapp {
-            background: #25D366;
-        }
-
-        .social-btn.email {
-            background: #EA4335;
-        }
-
+        .social-btn.instagram,
+        .social-btn.whatsapp,
+        .social-btn.email,
         .social-btn.phone {
-            background: var(--accent);
+            background: var(--gradient);
         }
 
         /* Animations */
@@ -570,6 +582,9 @@
             .social-card {
                 padding: 20px;
                 border-radius: 15px;
+                width: 100%;
+                margin: 0;
+                box-sizing: border-box;
             }
 
             .contact-card h2,
@@ -646,6 +661,27 @@
             }
         }
 
+        @media (max-width: 600px) {
+            .hero, .contact-card, .map-card, .form-card, .social-card {
+                padding: 20px;
+                border-radius: 12px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 18px;
+            }
+
+            .map-container { height: 280px; }
+
+            .contact-icon { width: 48px; height: 48px; font-size: 1.1rem; }
+            .contact-details h3 { font-size: 1rem; }
+            .btn { padding: 10px 18px; font-size: 0.95rem; }
+
+            .submit-btn { padding: 12px; font-size: 1rem; }
+            .social-btn { width: 56px; height: 56px; font-size: 1.3rem; }
+        }
+
         @media (max-width: 480px) {
             .nav-logo {
                 font-size: 1rem;
@@ -677,6 +713,8 @@
             .form-card,
             .social-card {
                 padding: 15px;
+                margin: 0;
+                box-sizing: border-box;
             }
 
             .contact-card h2,
@@ -715,6 +753,14 @@
             .form-group label {
                 font-size: 0.9rem;
             }
+        }
+
+        @media (max-width: 400px) {
+            .map-container { height: 220px; }
+            .contact-icon { width: 44px; height: 44px; }
+            .contact-details a, .contact-details p { font-size: 0.95rem; }
+            .action-buttons { flex-direction: column; gap: 10px; }
+            .btn { width: 100%; justify-content: center; }
         }
 
         @media (max-width: 360px) {
@@ -777,9 +823,9 @@
                     </div>
                     <div class="contact-details">
                         <h3>Phone Number</h3>
-                        <a href="tel:+919782978298">+91 9782978298</a>
+                        <a href="tel:+919460657127">+91 9460657127</a>
                         <div class="action-buttons">
-                            <a href="tel:+919782978298" class="btn btn-primary">
+                            <a href="tel:+919460657127" class="btn btn-primary">
                                 <i class="fas fa-phone"></i> Call Now
                             </a>
                         </div>
@@ -793,9 +839,9 @@
                     </div>
                     <div class="contact-details">
                         <h3>WhatsApp</h3>
-                        <a href="https://wa.me/919782978298" target="_blank">+91 9782978298</a>
+                        <a href="https://wa.me/919460657127" target="_blank">+91 9460657127</a>
                         <div class="action-buttons">
-                            <a href="https://wa.me/919782978298" target="_blank" class="btn btn-secondary">
+                            <a href="https://wa.me/919460657127" target="_blank" class="btn btn-secondary">
                                 <i class="fab fa-whatsapp"></i> Chat on WhatsApp
                             </a>
                         </div>
@@ -926,16 +972,16 @@
             <div class="social-card">
                 <h2>Connect With Us</h2>
                 <div class="social-links">
-                    <a href="https://www.instagram.com/click_it_9782" target="_blank" class="social-btn instagram" aria-label="Instagram">
+                    <a href="https://www.instagram.com/Insight_Frame___" target="_blank" class="social-btn instagram" aria-label="Instagram">
                         <i class="fab fa-instagram"></i>
                     </a>
-                    <a href="https://wa.me/919782978298" target="_blank" class="social-btn whatsapp" aria-label="WhatsApp">
+                    <a href="https://wa.me/919460657127" target="_blank" class="social-btn whatsapp" aria-label="WhatsApp">
                         <i class="fab fa-whatsapp"></i>
                     </a>
                     <a href="mailto:tjclickstudio@gmail.com" class="social-btn email" aria-label="Email">
                         <i class="fas fa-envelope"></i>
                     </a>
-                    <a href="tel:+919782978298" class="social-btn phone" aria-label="Phone">
+                    <a href="tel:+919460657127" class="social-btn phone" aria-label="Phone">
                         <i class="fas fa-phone-alt"></i>
                     </a>
                 </div>

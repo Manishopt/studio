@@ -15,6 +15,11 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            overflow-x: hidden;
+            width: 100%;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -22,7 +27,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 10px;
+            box-sizing: border-box;
         }
 
         .login-container {
@@ -30,8 +36,9 @@
             border-radius: 20px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             overflow: hidden;
-            max-width: 450px;
-            width: 100%;
+            width: min(100% - 20px, 450px);
+            margin-inline: auto;
+            box-sizing: border-box;
             animation: slideUp 0.6s ease;
         }
 
@@ -47,7 +54,7 @@
         }
 
         .login-header {
-            background: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            background: linear-gradient(135deg, #ffb6c1 0%, #0891B2 100%); /* pink start */
             padding: 40px 30px;
             text-align: center;
             color: white;
@@ -110,8 +117,8 @@
 
         .form-group input:focus {
             outline: none;
-            border-color: #D4A574;
-            box-shadow: 0 0 15px rgba(212, 165, 116, 0.2);
+            border-color: #ffb6c1;
+            box-shadow: 0 0 15px rgba(255,182,193,0.2); /* pink shadow */
         }
 
         .toggle-password {
@@ -163,7 +170,7 @@
         .login-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #D4A574 0%, #0891B2 100%);
+            background: #ffb6c1; /* pink */
             color: white;
             border: none;
             border-radius: 10px;
@@ -171,12 +178,13 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3);
         }
 
         .login-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(212, 165, 116, 0.4);
+            box-shadow: 0 8px 20px rgba(255,182,193,0.4);
+            background: #e599b0; /* darker pink on hover */
         }
 
         .login-btn:active {
@@ -190,16 +198,24 @@
             border-top: 1px solid #e0e0e0;
         }
 
-        .back-home a {
+        .contact-info {
+            margin-top: 20px;
+            text-align: center;
             color: #666;
+            font-size: 0.9rem;
+        }
+
+        .contact-info p {
+            margin: 5px 0;
+        }
+
+        .contact-info a {
+            color: #0891B2;
             text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
             transition: color 0.3s ease;
         }
 
-        .back-home a:hover {
+        .contact-info a:hover {
             color: #D4A574;
         }
 
@@ -225,24 +241,48 @@
             border-left: 4px solid #3c3;
         }
 
-        @media (max-width: 480px) {
+        /* extra mobile responsiveness */
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+            }
+            
+            .login-container {
+                width: 100%;
+                margin: 5px;
+            }
+            
             .login-header {
-                padding: 30px 20px;
+                padding: 24px 18px;
             }
 
-            .login-header h1 {
-                font-size: 1.5rem;
-            }
+            .login-header i { font-size: 2.2rem; }
+            .login-header h1 { font-size: 1.4rem; }
 
             .login-body {
-                padding: 30px 20px;
+                padding: 15px;
             }
 
-            .remember-forgot {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
+            .form-group input {
+                padding: 12px 12px 12px 44px;
+                font-size: 0.95rem;
             }
+
+            .input-wrapper i, .toggle-password {
+                font-size: 1.05rem;
+            }
+
+            .login-btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .login-header { padding: 18px 14px; }
+            .login-body { padding: 16px; }
+            .form-group label { font-size: 0.9rem; }
+            .login-btn { font-size: 0.95rem; padding: 10px; }
         }
     </style>
 </head>
@@ -298,6 +338,11 @@
                 <a href="index.html">
                     <i class="fas fa-arrow-left"></i> Back to Website
                 </a>
+                <div class="contact-info">
+                    <p><i class="fas fa-phone"></i> Contact: <a href="tel:+919460657127">+91 9460657127</a></p>
+                    <p><i class="fab fa-instagram"></i> Instagram: <a href="https://instagram.com/Insight_Frame___" target="_blank">@Insight_Frame___</a></p>
+                    <p><i class="fas fa-envelope"></i> Email: <a href="mailto:tjclickstudio@gmail.com">tjclickstudio@gmail.com</a></p>
+                </div>
             </div>
         </div>
     </div>

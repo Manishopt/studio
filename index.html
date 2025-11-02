@@ -25,7 +25,7 @@
         }
 
         :root {
-            --primary-color: #D4A574;
+            --primary-color: #ffb6c1; /* changed from golden to pink */
             --secondary-color: #334155;
             --accent-color: #0891B2;
             --dark-bg: #1a1a1a;
@@ -38,6 +38,8 @@
 
         html {
             scroll-behavior: smooth;
+            overflow-x: hidden;
+            width: 100%;
         }
 
         body {
@@ -45,6 +47,14 @@
             background-color: var(--light-bg);
             color: var(--text-dark);
             line-height: 1.6;
+            overflow-x: hidden;
+            width: 100vw;
+            max-width: 100%;
+            box-sizing: border-box;
+        }
+
+        .container {
+            width: 100%;
             overflow-x: hidden;
         }
 
@@ -116,7 +126,7 @@
             color: var(--text-light);
             letter-spacing: 3px;
             text-transform: uppercase;
-            text-shadow: 2px 2px 8px rgba(212, 165, 116, 0.3);
+            text-shadow: 2px 2px 8px rgba(255,182,193,0.3); /* pink shadow */
             transition: var(--transition);
             cursor: pointer;
         }
@@ -192,7 +202,7 @@
 
         header h1:hover {
             transform: scale(1.05);
-            text-shadow: 0 0 20px rgba(212, 165, 116, 0.6);
+            text-shadow: 0 0 20px rgba(255,182,193,0.6); /* pink shadow */
             color: var(--primary-color);
         }
 
@@ -206,17 +216,19 @@
 
         header p:hover {
             transform: scale(1.03);
-            text-shadow: 0 0 15px rgba(212, 165, 116, 0.5);
+            text-shadow: 0 0 15px rgba(255,182,193,0.5); /* pink shadow */
             color: var(--primary-color);
         }
 
         /* ===== SECTIONS ===== */
         section {
             background-color: rgba(255, 255, 255, 0.95);
-            margin: 60px auto;
-            padding: 60px 80px;
+            margin: 60px 10px; /* Adjusted side margins */
+            padding: 60px 20px; /* Adjusted side padding */
+            width: min(100% - 20px, 1200px);
+            margin-inline: auto;
+            box-sizing: border-box;
             border-radius: 20px;
-            max-width: 1200px;
             box-shadow: var(--shadow);
             animation: fadeIn 0.8s ease;
         }
@@ -237,6 +249,9 @@
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 40px;
             margin-top: 40px;
+            width: 100%;
+            padding: 0 10px;
+            box-sizing: border-box;
         }
 
         figure {
@@ -284,7 +299,8 @@
         }
 
         .services-list li {
-            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            /* replaced multi-color gradient with single primary color and readable text */
+            background: var(--primary-color);
             color: var(--text-light);
             padding: 20px;
             border-radius: 10px;
@@ -296,6 +312,8 @@
         }
 
         .services-list li:hover {
+            /* on hover switch to accent color for a two-color effect */
+            background: var(--accent-color);
             transform: translateY(-5px);
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
         }
@@ -328,7 +346,7 @@
         .about-list li {
             margin: 20px 0;
             padding: 20px;
-            background: linear-gradient(to right, rgba(212, 165, 116, 0.08), rgba(8, 145, 178, 0.08));
+            background: linear-gradient(to right, rgba(255,182,193,0.08), rgba(8, 145, 178, 0.08));
             border-radius: 10px;
             border-left: 4px solid var(--primary-color);
             transition: var(--transition);
@@ -336,7 +354,7 @@
 
         .about-list li:hover {
             transform: translateX(10px);
-            background: linear-gradient(to right, rgba(212, 165, 116, 0.15), rgba(8, 145, 178, 0.15));
+            background: linear-gradient(to right, rgba(255,182,193,0.15), rgba(8, 145, 178, 0.15));
         }
 
         .about-list strong {
@@ -396,7 +414,7 @@
             height: 250px;
             border-radius: 20px;
             object-fit: cover;
-            box-shadow: 0 10px 30px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 10px 30px rgba(255,182,193,0.3); /* pink shadow */
             border: 3px solid var(--primary-color);
             transition: var(--transition);
         }
@@ -432,7 +450,7 @@
             max-width: 600px;
             margin: 40px auto;
             padding: 40px;
-            background: linear-gradient(135deg, rgba(212, 165, 116, 0.08), rgba(8, 145, 178, 0.08));
+            background: linear-gradient(135deg, rgba(255,182,193,0.08), rgba(8, 145, 178, 0.08));
             border-radius: 15px;
             box-shadow: var(--shadow);
         }
@@ -457,13 +475,13 @@
         .contact-form input:focus {
             outline: none;
             border-color: var(--primary-color);
-            box-shadow: 0 0 10px rgba(212, 165, 116, 0.3);
+            box-shadow: 0 0 10px rgba(255,182,193,0.3); /* pink shadow */
         }
 
         .contact-form button {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
+            background: var(--primary-color);
             color: var(--text-light);
             border: none;
             border-radius: 8px;
@@ -471,12 +489,13 @@
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 5px 15px rgba(255,182,193,0.3); /* pink shadow */
         }
 
         .contact-form button:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 8px 20px rgba(255,182,193,0.4); /* pink shadow */
+            background: #e599b0; /* darker pink on hover */
         }
 
         /* ===== CONTACT INFO ===== */
@@ -753,9 +772,10 @@
             }
 
             section {
-                padding: 30px 20px;
-                margin: 30px 15px;
+                padding: 30px 15px;
+                margin: 30px 8px;
                 border-radius: 15px;
+                width: calc(100% - 16px);
             }
 
             section h2 {
@@ -880,38 +900,55 @@
             }
         }
 
-        @media (max-width: 480px) {
-            .nav-logo {
-                font-size: 1.1rem;
-                letter-spacing: 2px;
+        @media (max-width: 600px) {
+            header {
+                height: auto;
+                padding: 40px 16px;
+                background-attachment: scroll; /* avoid fixed background on mobile */
             }
-
             header h1 {
-                font-size: 2rem;
+                font-size: 1.6rem;
+                letter-spacing: 1px;
             }
-
             header p {
-                font-size: 0.9rem;
-            }
-
-            section {
-                padding: 25px 15px;
-                margin: 20px 10px;
-            }
-
-            section h2 {
-                font-size: 1.5rem;
-            }
-
-            .album-cover {
-                width: 150px;
-                height: 150px;
-            }
-
-            .controls button {
-                padding: 10px 15px;
                 font-size: 1rem;
             }
+
+            .portfolio-grid {
+                gap: 18px;
+            }
+            figure img {
+                height: auto;   /* allow images to scale */
+                max-height: 220px;
+            }
+
+            .services-list {
+                gap: 12px;
+                padding: 0 8px;
+            }
+            .services-list li {
+                padding: 14px;
+                font-size: 1rem;
+            }
+
+            .contact-form {
+                padding: 20px;
+            }
+
+            .floating-btn {
+                right: 16px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            nav { padding: 12px 14px; }
+            .nav-logo { font-size: 1rem; }
+            .menu-toggle { gap: 3px; }
+            .cursor-dot, .cursor-outline { display: none; } /* reduce overhead */
+            .album-cover { width: 140px; height: 140px; }
+            .portfolio-grid figure img { max-height: 160px; }
+            section { padding: 20px 12px; margin: 16px 8px; }
+            .services-list li { font-size: 0.95rem; padding: 12px; }
         }
     </style>
 </head>
@@ -1032,7 +1069,7 @@
             "Tejender was amazing! She made us feel so comfortable and the photos turned out better than we ever imagined." — <strong>Shobit & Kavita</strong>
         </blockquote>
         <blockquote>
-            "Incredible eye for detail. Highly recommended for professional headshots!" — <strong>Litin</strong>
+            "Incredible eye for detail
         </blockquote>
         <blockquote>
             "Absolutely blown away by the photos! You didn't just take pictures—you captured memories. Every shot tells a story, and I'll treasure them forever. Professional, creative, and easy to work with. Highly recommend!" — <strong>Jay</strong>
@@ -1123,8 +1160,8 @@
 
         <div class="contact-info">
             <p><i class="fas fa-envelope"></i> Email: <a href="mailto:tjclickstudio@gmail.com">tjclickstudio@gmail.com</a></p>
-            <p><i class="fas fa-phone"></i> Phone: <a href="tel:+919782978298">+91 9782978298</a></p>
-            <p><i class="fab fa-instagram"></i> Instagram: <a href="https://www.instagram.com/click_it_9782" target="_blank" rel="noopener noreferrer">@click_it_9782</a></p>
+            <p><i class="fas fa-phone"></i> Phone: <a href="tel:+919460657127">+91 9460657127</a></p>
+            <p><i class="fab fa-instagram"></i> Instagram: <a href="https://www.instagram.com/Insight_Frame___" target="_blank" rel="noopener noreferrer">@Insight_Frame___</a></p>
         </div>
     </section>
 
@@ -1132,17 +1169,17 @@
     <footer>
         <p>&copy; 2025 Tejender Kaur Photography | TJ Clicks Studio. All rights reserved.</p>
         <div>
-            <a href="https://www.instagram.com/click_it_9782" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.instagram.com/Insight_Frame___" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-instagram"></i> Instagram
             </a>
-            <a href="https://wa.me/919782978298" target="_blank" rel="noopener noreferrer">
+            <a href="https://wa.me/919460657127" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-whatsapp"></i> WhatsApp
             </a>
         </div>
     </footer>
 
     <!-- Floating Buttons -->
-    <a href="https://wa.me/919782978298" target="_blank" rel="noopener noreferrer" class="floating-btn" id="whatsapp-btn" aria-label="Contact on WhatsApp">
+    <a href="https://wa.me/919460657127" target="_blank" rel="noopener noreferrer" class="floating-btn" id="whatsapp-btn" aria-label="Contact on WhatsApp">
         <i class="fab fa-whatsapp"></i>
     </a>
     <a href="#" class="floating-btn" id="scroll-top-btn" aria-label="Scroll to top">
@@ -1290,3 +1327,5 @@
             observer.observe(section);
         });
     </script>
+</body>
+</html>
