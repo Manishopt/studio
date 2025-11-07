@@ -63,7 +63,7 @@
         .blog-section {
             background-color: var(--card-bg);
             padding: 40px 20px;
-            border-radius: 10px;
+            border-radius: 30px;
             margin: 60px auto;
             max-width: 1200px;
             width: 90%;
@@ -74,7 +74,7 @@
             background: rgba(255, 255, 255, 0.1);
             padding: 25px;
             margin: 20px auto;
-            border-radius: 8px;
+            border-radius: 30px;
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
             max-width: 800px;
@@ -231,7 +231,8 @@
 
         .nav-links {
             display: flex;
-            gap: 30px;
+            gap: 15px;
+            align-items: center;
         }
 
         .nav-links a {
@@ -320,13 +321,13 @@
         /* ===== SECTIONS ===== */
         section {
             background-color: var(--card-bg);
-            margin: 0 auto;
+            margin: 40px auto;
             max-width: 1200px;
-            padding: 60px 20px;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            transition: background-color 0.5s ease, box-shadow 0.5s ease;
+            padding: 50px 5%;
+            position: relative;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
         }
 
         section h2 {
@@ -358,7 +359,7 @@
         
         .portfolio-grid figure {
             background: var(--card-bg);
-            border-radius: 8px;
+            border-radius: 30px;
             overflow: hidden;
             box-shadow: var(--shadow);
             transition: transform 0.3s ease;
@@ -419,7 +420,7 @@
             padding: 25px;
             margin: 15px 0;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 30px 30px 0;
             transition: all 0.3s ease;
         }
         
@@ -746,11 +747,11 @@
         
         /* Theme toggle in navigation */
         .nav-theme-toggle {
-            margin-left: 0;
+            margin-left: 5px;
             padding: 8px;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -774,11 +775,14 @@
         }
 
         @media (max-width: 768px) {
+            .nav-links .nav-theme-toggle {
+                display: none; /* Hide from mobile menu */
+            }
             .nav-theme-toggle {
                 margin: 15px 0 0 0;
                 background: rgba(255, 255, 255, 0.1);
-                width: 40px;
-                height: 40px;
+                width: 36px;
+                height: 36px;
             }
         }
 
@@ -1156,6 +1160,120 @@
             section { padding: 20px 12px; margin: 16px 8px; }
             .services-list li { font-size: 0.95rem; padding: 12px; }
         }
+
+        /* ===== BLOG SECTION ===== */
+        .blog-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+
+        .blog-card {
+            background: var(--card-bg);
+            border-radius: 30px;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .blog-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .blog-image {
+            position: relative;
+            overflow: hidden;
+            height: 200px;
+        }
+
+        .blog-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+
+        .blog-card:hover .blog-image img {
+            transform: scale(1.05);
+        }
+
+        .blog-category {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .blog-content {
+            padding: 20px;
+        }
+
+        .blog-date {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .blog-content h3 {
+            margin: 10px 0;
+            font-size: 1.3rem;
+            color: var(--text-dark);
+        }
+
+        .blog-content p {
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            line-height: 1.6;
+        }
+
+        .read-more {
+            display: inline-flex;
+            align-items: center;
+            color: var(--primary-color);
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .read-more i {
+            margin-left: 5px;
+            transition: transform 0.3s ease;
+        }
+
+        .read-more:hover {
+            color: var(--accent-color);
+        }
+
+        .read-more:hover i {
+            transform: translateX(5px);
+        }
+
+        .blog-cta {
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        .section-subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin: -20px 0 30px;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .blog-grid {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body class="index-page">
@@ -1175,21 +1293,20 @@
     <!-- Navigation -->
     <nav>
         <div class="nav-logo">TJ Clicks</div>
-        <div class="nav-controls">
-            <button class="theme-toggle nav-theme-toggle" id="theme-toggle" aria-label="Toggle theme">
-                <i class="fas fa-moon"></i>
-            </button>
-            <div class="menu-toggle" id="menuToggle">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-        </div>
         <div class="nav-links" id="navLinks">
             <a href="#portfolio">Portfolio</a>
             <a href="#services">Services</a>
             <a href="#about">About</a>
             <a href="contact.html">Contact</a>
+            <button class="theme-toggle nav-theme-toggle" id="theme-toggle" aria-label="Toggle theme">
+                <i class="fas fa-moon"></i>
+            </button>
+        </div>
+        <div class="menu-toggle" id="menuToggle">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
         </div>
     </nav>
 
@@ -1329,24 +1446,14 @@
         <p>Visit our studio at 456 Jagatpura Lens Street, Jaipur, 303505. We're near the CBI Fathak.</p>
     </section>
 
-    <!-- Contact Form & Info -->
-    <section id="contact">
+    <!-- Contact Section -->
+    <section id="contact" style="text-align: center; padding: 60px 20px;">
         <h2>Get In Touch</h2>
-        <p>Ready to capture your special moments? Fill out the form below or reach out directly.</p>
-        
-        <!-- Replaced full form with single Get In Touch button that navigates to contact.html -->
-        <div class="contact-form" aria-hidden="false">
-            <a href="contact.html" class="contact-button" role="button" aria-label="Get In Touch">
-                <i class="fas fa-envelope"></i> Get In Touch
-            </a>
-        </div>
- 
-         <div class="contact-info">
-             <p><i class="fas fa-envelope"></i> Email: <a href="mailto:tjclickstudio@gmail.com">tjclickstudio@gmail.com</a></p>
-             <p><i class="fas fa-phone"></i> Phone: <a href="tel:+919460657127">+91 9460657127</a></p>
-             <p><i class="fab fa-instagram"></i> Instagram: <a href="https://www.instagram.com/Insight_Frame___" target="_blank" rel="noopener noreferrer">@Insight_Frame___</a></p>
-         </div>
-     </section>
+        <p style="margin-bottom: 30px;">Ready to capture your special moments? Click below to get in touch with us.</p>
+        <a href="contact.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 40px; border-radius: 30px;">
+            <i class="fas fa-envelope"></i> Contact Us
+        </a>
+    </section>
 
     <!-- Footer -->
     <footer>
