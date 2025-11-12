@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
     <style>
         * {
             margin: 0;
@@ -364,16 +369,113 @@
             cursor: pointer;
             font-size: 0.85rem;
             transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 4px;
+            padding: 5px 8px;
+            margin: 2px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-
-        .photo-actions .btn-edit {
-            background: #3498db;
+        
+        .btn-set-main {
+            color: #ccc;
+        }
+        
+        .btn-set-main.active,
+        .btn-set-main:hover {
+            color: #ffd700;
+            background: rgba(255, 215, 0, 0.2) !important;
+        }
+        
+        /* Portfolio filters */
+        .portfolio-filters .btn {
+            background: #f0f0f0;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .portfolio-filters .btn:hover {
+            background: #e0e0e0;
+        }
+        
+        .portfolio-filters .btn.active {
+            background: #2c3e50;
             color: white;
         }
 
-        .photo-actions .btn-delete {
-            background: #e74c3c;
+        /* Category Thumbnails Styles */
+        .thumbnails-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .thumbnail-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .thumbnail-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .thumbnail-preview {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-bottom: 1px solid #eee;
+        }
+
+        .thumbnail-actions {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .thumbnail-actions h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 1.1rem;
+        }
+
+        .thumbnail-upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #2c3e50;
             color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .thumbnail-upload-btn:hover {
+            background: #34495e;
+        }
+
+        .thumbnail-upload-input {
+            display: none;
+        }
+        
+        /* Portfolio items */
+        .portfolio-item {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .portfolio-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
         /* Upload Area */
@@ -570,6 +672,12 @@
                 </a>
             </li>
             <li>
+                <a href="#" class="menu-link" data-section="categoryThumbnails">
+                    <i class="fas fa-image"></i>
+                    <span>Category Thumbnails</span>
+                </a>
+            </li>
+            <li>
                 <a href="#" class="menu-link" data-section="services">
                     <i class="fas fa-briefcase"></i>
                     <span>Services</span>
@@ -720,7 +828,10 @@
                         <input type="file" id="photoUpload" accept="image/*" multiple hidden>
                     </div>
 
-                    <button type="button" class="btn btn-primary" onclick="uploadPhotos()">
+                    <!-- File List Preview -->
+                    <div id="fileListContainer" style="display: none; margin: 15px 0;"></div>
+
+                    <button type="button" id="uploadButton" class="btn btn-primary" onclick="uploadPhotos()" style="display: none;">
                         <i class="fas fa-upload"></i> Upload Photos
                     </button>
                 </form>
@@ -779,47 +890,74 @@
             </div>
         </div>
 
+        <!-- Category Thumbnails Section -->
+        <div class="content-section" id="categoryThumbnails">
+            <div class="alert alert-success" id="thumbnailsAlert" style="display: none;"></div>
+            
+            <div class="section-header">
+                <h2>Manage Category Thumbnails</h2>
+                <p>Upload and update thumbnails for each portfolio category</p>
+            </div>
+            
+            <div class="thumbnails-grid" id="thumbnailsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; padding: 20px 0;">
+                <div style="width: 100%; text-align: center; padding: 20px; color: #666;" id="loadingMessage">
+                    Loading categories...
+                </div>
+            </div>
+        </div>
+
         <!-- Portfolio Section -->
         <div class="content-section" id="portfolio">
             <div class="alert alert-success" id="portfolioAlert"></div>
             
             <div class="section-header">
-                <h2>Portfolio Items</h2>
-                <button class="btn btn-primary" onclick="showAddPortfolioForm()">
-                    <i class="fas fa-plus"></i> Add Portfolio Item
-                </button>
+                <h2>Portfolio Gallery</h2>
+                <div>
+                    <button class="btn btn-primary" onclick="loadPortfolioPhotos()">
+                        <i class="fas fa-sync"></i> Refresh
+                    </button>
+                    <button class="btn btn-secondary" onclick="showAddPortfolioForm()">
+                        <i class="fas fa-plus"></i> Add New
+                    </button>
+                </div>
             </div>
 
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Image</th>
-                        <th>Title</th>
-                        <th>Description</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td><img src="Image/Wedding.jpg" width="60" style="border-radius: 5px;"></td>
-                        <td>Wedding Photography</td>
-                        <td>Beautiful couple in Jaipur...</td>
-                        <td class="table-actions">
-                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td><img src="Image/Maternity.jpg" width="60" style="border-radius: 5px;"></td>
-                        <td>Maternity Photography</td>
-                        <td>Celebrating motherhood...</td>
-                        <td class="table-actions">
-                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+            <!-- Category Filters -->
+            <div class="portfolio-filters" style="margin-bottom: 25px; display: flex; gap: 10px; flex-wrap: wrap;">
+                <button class="btn active" onclick="filterPortfolio('all')">All Categories</button>
+                <button class="btn" onclick="filterPortfolio('Wedding')">Wedding Photography</button>
+                <button class="btn" onclick="filterPortfolio('Maternity')">Maternity Photography</button>
+                <button class="btn" onclick="filterPortfolio('Portrait')">Portrait Photography</button>
+                <button class="btn" onclick="filterPortfolio('Commercial')">Commercial Photography</button>
+                <button class="btn" onclick="filterPortfolio('PreWedding')">Pre-Wedding Shoots</button>
+                <button class="btn" onclick="filterPortfolio('Newborn')">Newborn Photography</button>
+            </div>
+
+            <!-- Main Featured Photos -->
+            <div class="featured-portfolio">
+                <h3 style="margin-bottom: 20px;">Featured Photos</h3>
+                <div class="featured-grid" id="featuredGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <!-- Featured photos will be loaded here -->
+                    <div class="no-featured" style="grid-column: 1 / -1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+                        <i class="fas fa-star" style="font-size: 2rem; color: #ddd; margin-bottom: 10px;"></i>
+                        <p>No featured photos yet. Mark photos as "Main" in the Photos section to feature them here.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- All Portfolio Items -->
+            <div class="portfolio-items">
+                <div class="section-header" style="margin-bottom: 20px;">
+                    <h3>All Portfolio Items</h3>
+                    <div id="portfolioCount" style="font-size: 0.9rem; color: #666;">
+                        Showing <span id="visibleCount">0</span> of <span id="totalPortfolioCount">0</span> items
+                    </div>
+                </div>
+                
+                <div class="portfolio-grid" id="portfolioGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px;">
+                    <!-- Portfolio items will be loaded here -->
+                </div>
+            </div>
         </div>
 
         <!-- Services Section -->
@@ -909,18 +1047,18 @@
 
             <form id="aboutForm">
                 <div class="form-group">
-                    <label>About Title</label>
-                    <input type="text" value="About Me" required>
+                    <label>Studio Name</label>
+                    <input type="text" id="studioName" value="TJ Clicks Studio" required>
                 </div>
 
                 <div class="form-group">
                     <label>Main Description</label>
-                    <textarea required>Hi! I'm Tejender Kaur, a freelance photographer based in Jaipur, Rajasthan...</textarea>
+                    <textarea id="aboutDescription" required>Hi! I'm Tejender Kaur, a freelance photographer based in Jaipur, Rajasthan...</textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Additional Info</label>
-                    <textarea>With a relaxed approach and a keen eye for detail...</textarea>
+                    <label>Years of Experience</label>
+                    <input type="number" id="experience" value="5" required>
                 </div>
 
                 <button type="submit" class="btn btn-success">
@@ -940,27 +1078,27 @@
             <form id="contactForm">
                 <div class="form-group">
                     <label>Phone Number</label>
-                    <input type="tel" value="+91 9782978298" required>
+                    <input type="tel" id="contactPhone" value="+91 9782978298" required>
                 </div>
 
                 <div class="form-group">
                     <label>WhatsApp Number</label>
-                    <input type="tel" value="+91 9782978298" required>
+                    <input type="tel" id="contactWhatsapp" value="+91 9782978298" required>
                 </div>
 
                 <div class="form-group">
                     <label>Email Address</label>
-                    <input type="email" value="tjclickstudio@gmail.com" required>
+                    <input type="email" id="contactEmail" value="tjclickstudio@gmail.com" required>
                 </div>
 
                 <div class="form-group">
                     <label>Instagram Handle</label>
-                    <input type="text" value="@click_it_9782" required>
+                    <input type="text" id="contactInstagram" value="@click_it_9782" required>
                 </div>
 
                 <div class="form-group">
                     <label>Studio Address</label>
-                    <textarea required>456 Jagatpura Lens Street, Near CBI Fathak, Jaipur, Rajasthan 303505</textarea>
+                    <textarea id="contactAddress" required>Vrinda Gardens, Jagatpura, Jaipur, 302017. Near JNU College</textarea>
                 </div>
 
                 <button type="submit" class="btn btn-success">
@@ -1103,13 +1241,75 @@
         });
 
         function handleFiles(files) {
-            const photoAlert = document.getElementById('photoAlert');
-            photoAlert.textContent = `${files.length} photo(s) uploaded successfully!`;
-            photoAlert.style.display = 'block';
+            const photoUpload = document.getElementById('photoUpload');
+            const fileListContainer = document.getElementById('fileListContainer');
+            const uploadButton = document.getElementById('uploadButton');
             
-            setTimeout(() => {
-                photoAlert.style.display = 'none';
-            }, 3000);
+            if (files.length === 0) return;
+            
+            // Create a new DataTransfer object to hold the files
+            const dataTransfer = new DataTransfer();
+            for (let i = 0; i < files.length; i++) {
+                dataTransfer.items.add(files[i]);
+            }
+            
+            // Set the files to the file input
+            photoUpload.files = dataTransfer.files;
+            
+            // Build file list HTML
+            let fileListHTML = `
+                <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 15px;">
+                    <div style="font-weight: 600; color: #495057; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-images" style="color: #4CAF50;"></i>
+                        <span>${files.length} file(s) selected</span>
+                    </div>
+                    <div style="max-height: 150px; overflow-y: auto;">
+            `;
+            
+            Array.from(files).forEach((file, index) => {
+                const fileSize = formatFileSize(file.size);
+                const fileIcon = getFileIcon(file.type);
+                fileListHTML += `
+                    <div style="display: flex; align-items: center; padding: 8px; background: white; border-radius: 4px; margin-bottom: 5px; border: 1px solid #e9ecef;">
+                        <i class="${fileIcon}" style="color: #6c757d; margin-right: 10px; font-size: 1.1rem;"></i>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 0.9rem; color: #212529; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${file.name}">${file.name}</div>
+                            <div style="font-size: 0.75rem; color: #6c757d;">${fileSize}</div>
+                        </div>
+                        <i class="fas fa-check-circle" style="color: #28a745; margin-left: 10px;"></i>
+                    </div>
+                `;
+            });
+            
+            fileListHTML += `
+                    </div>
+                </div>
+            `;
+            
+            // Display file list
+            fileListContainer.innerHTML = fileListHTML;
+            fileListContainer.style.display = 'block';
+            
+            // Show upload button
+            uploadButton.style.display = 'inline-block';
+            
+            // Log for debugging
+            console.log('Files ready for upload:', files.length);
+        }
+        
+        // Format file size to human readable format
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Get appropriate icon for file type
+        function getFileIcon(fileType) {
+            if (fileType.startsWith('image/')) return 'fas fa-file-image';
+            return 'fas fa-file';
         }
 
         // Services form
@@ -1140,58 +1340,211 @@
             servicesList.appendChild(newService);
         }
 
-        // Testimonials form
+        // Testimonials form - Save to Firebase
         const testimonialForm = document.getElementById('testimonialForm');
-        testimonialForm.addEventListener('submit', (e) => {
+        testimonialForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const clientName = document.getElementById('clientName').value;
             const testimonialText = document.getElementById('testimonialText').value;
-            
-            const table = document.getElementById('testimonialsTable');
-            const newRow = table.insertRow();
-            newRow.innerHTML = `
-                <td>${clientName}</td>
-                <td>${testimonialText.substring(0, 50)}...</td>
-                <td class="table-actions">
-                    <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
-                    <button class="btn-delete" onclick="deleteRow(this)"><i class="fas fa-trash"></i> Delete</button>
-                </td>
-            `;
-            
-            // Show success message
+            const submitButton = e.target.querySelector('button[type="submit"]');
             const alert = document.getElementById('testimonialsAlert');
-            alert.textContent = 'Testimonial added successfully!';
-            alert.style.display = 'block';
             
-            // Reset form
-            testimonialForm.reset();
+            // Disable button during submission
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+            
+            try {
+                // Save to Firebase
+                const result = await firebaseDB.addTestimonial({
+                    clientName: clientName,
+                    testimonialText: testimonialText,
+                    rating: 5
+                });
+                
+                if (result.success) {
+                    // Add to table
+                    const table = document.getElementById('testimonialsTable');
+                    const newRow = table.insertRow();
+                    newRow.setAttribute('data-testimonial-id', result.id);
+                    newRow.innerHTML = `
+                        <td>${clientName}</td>
+                        <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
+                        <td class="table-actions">
+                            <button class="btn-delete" onclick="deleteTestimonialFromFirebase('${result.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    `;
+                    
+                    // Show success message
+                    alert.textContent = '✅ Testimonial saved to Firebase!';
+                    alert.style.display = 'block';
+                    
+                    // Reset form
+                    testimonialForm.reset();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert.textContent = '❌ Error: ' + error.message;
+                alert.style.display = 'block';
+                console.error('Error adding testimonial:', error);
+            } finally {
+                // Re-enable button
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-save"></i> Add Testimonial';
+                }
+            }
             
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 3000);
         });
+        
+        // Delete testimonial from Firebase
+        async function deleteTestimonialFromFirebase(testimonialId) {
+            if (!confirm('Are you sure you want to delete this testimonial?')) {
+                return;
+            }
+            
+            try {
+                const result = await firebaseDB.deleteTestimonial(testimonialId);
+                
+                if (result.success) {
+                    // Remove from table
+                    const row = document.querySelector(`tr[data-testimonial-id="${testimonialId}"]`);
+                    if (row) row.remove();
+                    
+                    const alert = document.getElementById('testimonialsAlert');
+                    alert.textContent = '✅ Testimonial deleted!';
+                    alert.style.display = 'block';
+                    setTimeout(() => alert.style.display = 'none', 2000);
+                }
+            } catch (error) {
+                alert('Error deleting testimonial: ' + error.message);
+            }
+        }
+        
+        // Load testimonials from Firebase on page load
+        async function loadTestimonialsFromFirebase() {
+            try {
+                const result = await firebaseDB.getTestimonials();
+                
+                if (result.success) {
+                    const table = document.getElementById('testimonialsTable');
+                    // Clear existing rows (except header)
+                    while (table.rows.length > 1) {
+                        table.deleteRow(1);
+                    }
+                    
+                    // Add testimonials from Firebase
+                    result.data.forEach(testimonial => {
+                        const newRow = table.insertRow();
+                        newRow.setAttribute('data-testimonial-id', testimonial.id);
+                        newRow.innerHTML = `
+                            <td>${testimonial.clientName}</td>
+                            <td>${testimonial.testimonialText.substring(0, 50)}${testimonial.testimonialText.length > 50 ? '...' : ''}</td>
+                            <td class="table-actions">
+                                <button class="btn-delete" onclick="deleteTestimonialFromFirebase('${testimonial.id}')">
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
+                        `;
+                    });
+                    
+                    console.log(`✅ Loaded ${result.data.length} testimonials from Firebase`);
+                }
+            } catch (error) {
+                console.error('Error loading testimonials:', error);
+            }
+        }
 
-        // About form
+        // About form - Save to Firebase
         const aboutForm = document.getElementById('aboutForm');
-        aboutForm.addEventListener('submit', (e) => {
+        aboutForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const alert = document.getElementById('aboutAlert');
-            alert.textContent = 'About information updated successfully!';
-            alert.style.display = 'block';
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+            
+            try {
+                const aboutData = {
+                    studioName: document.getElementById('studioName').value,
+                    description: document.getElementById('aboutDescription').value,
+                    experience: document.getElementById('experience').value
+                };
+                
+                const result = await firebaseDB.updateAboutInfo(aboutData);
+                
+                if (result.success) {
+                    alert.textContent = '✅ About information saved to Firebase!';
+                    alert.style.display = 'block';
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert.textContent = '❌ Error: ' + error.message;
+                alert.style.display = 'block';
+                console.error('Error updating about info:', error);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-save"></i> Update About Info';
+                }
+            }
             
             setTimeout(() => {
                 alert.style.display = 'none';
             }, 3000);
         });
 
-        // Contact form
+        // Contact form - Save to Firebase
         const contactForm = document.getElementById('contactForm');
-        contactForm.addEventListener('submit', (e) => {
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const alert = document.getElementById('contactAlert');
-            alert.textContent = 'Contact information updated successfully!';
-            alert.style.display = 'block';
+            const submitButton = e.target.querySelector('button[type="submit"]');
+            
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            }
+            
+            try {
+                const contactData = {
+                    phone: document.getElementById('contactPhone').value,
+                    whatsapp: document.getElementById('contactWhatsapp').value,
+                    email: document.getElementById('contactEmail').value,
+                    instagram: document.getElementById('contactInstagram').value,
+                    address: document.getElementById('contactAddress').value
+                };
+                
+                const result = await firebaseDB.updateContactInfo(contactData);
+                
+                if (result.success) {
+                    alert.textContent = '✅ Contact information saved to Firebase!';
+                    alert.style.display = 'block';
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                alert.textContent = '❌ Error: ' + error.message;
+                alert.style.display = 'block';
+                console.error('Error updating contact info:', error);
+            } finally {
+                if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="fas fa-save"></i> Update Contact Info';
+                }
+            }
             
             setTimeout(() => {
                 alert.style.display = 'none';
@@ -1231,8 +1584,14 @@
             });
         });
 
-        // Upload Photos Function
-        function uploadPhotos() {
+        // Cloudinary Configuration
+        const CLOUDINARY_CONFIG = {
+            CLOUD_NAME: 'dnpfsfvfv',
+            UPLOAD_PRESET: 'unsigned_upload'
+        };
+
+        // Upload Photos Function with Cloudinary
+        async function uploadPhotos() {
             const category = document.getElementById('photoCategory').value;
             const files = document.getElementById('photoUpload').files;
             
@@ -1248,6 +1607,8 @@
             
             const photoGrid = document.getElementById('photoGrid');
             const photoAlert = document.getElementById('photoAlert');
+            const fileListContainer = document.getElementById('fileListContainer');
+            const uploadButton = document.getElementById('uploadButton');
             
             // Category colors
             const categoryColors = {
@@ -1259,45 +1620,243 @@
                 'Newborn': '#e91e63'
             };
             
+            photoAlert.textContent = 'Uploading to Cloudinary...';
+            photoAlert.style.display = 'block';
+            
+            // Disable upload button during upload
+            uploadButton.disabled = true;
+            uploadButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading...';
+            
+            let successCount = 0;
+            let failCount = 0;
+            
             // Process each file
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                const reader = new FileReader();
                 
-                reader.onload = function(e) {
-                    const photoItem = document.createElement('div');
-                    photoItem.className = 'photo-item';
-                    photoItem.setAttribute('data-category', category);
+                try {
+                    // Upload to Cloudinary
+                    const result = await uploadToCloudinary(file, category);
                     
-                    photoItem.innerHTML = `
-                        <img src="${e.target.result}" alt="${category} Photo">
-                        <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[category]}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">${category}</div>
-                        <div class="photo-actions">
-                            <button class="btn-edit"><i class="fas fa-edit"></i></button>
-                            <button class="btn-delete" onclick="deletePhoto(this)"><i class="fas fa-trash"></i></button>
-                        </div>
-                    `;
-                    
-                    photoGrid.appendChild(photoItem);
-                };
-                
-                reader.readAsDataURL(file);
+                    if (result.success) {
+                        // Add photo to grid with Cloudinary URL
+                        const photoItem = document.createElement('div');
+                        photoItem.className = 'photo-item';
+                        photoItem.setAttribute('data-category', category);
+                        photoItem.setAttribute('data-cloudinary-id', result.public_id);
+                        
+                        // Save photo data with default values
+                        const photoData = savePhotoToLocalStorage({
+                            url: result.url,
+                            public_id: result.public_id,
+                            category: category,
+                            uploaded_at: new Date().toISOString(),
+                            title: category + ' Photo',
+                            description: '',
+                            isMain: false
+                        });
+                        
+                        // Create photo item with edit and main photo controls
+                        photoItem.innerHTML = `
+                            <img src="${result.url}" alt="${photoData.title}" loading="lazy">
+                            <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[category]}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
+                                ${category} ${photoData.isMain ? '★' : ''}
+                            </div>
+                            <div class="photo-actions">
+                                <button class="btn-edit" onclick="editPhoto(this)" data-id="${result.public_id}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-set-main" onclick="setAsMainPhoto('${result.public_id}')" title="Set as main photo">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                                <button class="btn-delete" onclick="deletePhoto(this)">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                            <div class="photo-info" style="display: none;">
+                                <h4>${photoData.title}</h4>
+                                <p>${photoData.description || 'No description'}</p>
+                            </div>
+                        `;
+                        
+                        photoGrid.appendChild(photoItem);
+                        successCount++;
+                        
+                        // Save to localStorage
+                    } else {
+                        failCount++;
+                        console.error('Upload failed:', result.error);
+                    }
+                } catch (error) {
+                    failCount++;
+                    console.error('Error uploading file:', error);
+                }
             }
             
             // Show success message
-            photoAlert.textContent = `${files.length} photo(s) uploaded successfully to ${category} category!`;
+            if (successCount > 0) {
+                photoAlert.textContent = `${successCount} photo(s) uploaded successfully to ${category} category!`;
+            }
+            if (failCount > 0) {
+                photoAlert.textContent += ` ${failCount} upload(s) failed.`;
+            }
             photoAlert.style.display = 'block';
             
-            // Reset form
+            // Reset form and UI
             document.getElementById('uploadForm').reset();
             document.getElementById('photoUpload').value = '';
+            fileListContainer.innerHTML = '';
+            fileListContainer.style.display = 'none';
+            
+            // Re-enable upload button
+            uploadButton.disabled = false;
+            uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload Photos';
+            uploadButton.style.display = 'none';
             
             // Update photo count
             updatePhotoCount();
             
             setTimeout(() => {
                 photoAlert.style.display = 'none';
-            }, 3000);
+            }, 4000);
+        }
+
+        // Upload single file to Cloudinary
+        async function uploadToCloudinary(file, category) {
+            const UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CONFIG.CLOUD_NAME}/image/upload`;
+            
+            try {
+                // Create FormData
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', CLOUDINARY_CONFIG.UPLOAD_PRESET);
+                formData.append('folder', `portfolio/${category}`); // Organize by category
+                formData.append('tags', category); // Add category as tag
+                
+                // Upload to Cloudinary
+                const response = await fetch(UPLOAD_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error?.message || 'Upload failed');
+                }
+                
+                const data = await response.json();
+                console.log('Cloudinary upload successful:', data.secure_url);
+                
+                // Save to Supabase if available
+                if (typeof saveImage === 'function') {
+                    try {
+                        await saveImage(data.secure_url);
+                        console.log('Successfully saved to Supabase');
+                    } catch (error) {
+                        console.warn('Could not save to Supabase:', error.message);
+                        // Continue even if Supabase save fails
+                    }
+                } else {
+                    console.warn('saveImage function not found. Make sure db.js is loaded.');
+                }
+                
+                return {
+                    success: true,
+                    url: data.secure_url,
+                    public_id: data.public_id,
+                    format: data.format,
+                    width: data.width,
+                    height: data.height
+                };
+            } catch (error) {
+                console.error('Error uploading to Cloudinary:', error);
+                return {
+                    success: false,
+                    error: error.message
+                };
+            }
+        }
+
+        // Save photo info to localStorage
+        function savePhotoToLocalStorage(photoData) {
+            let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            
+            // Check if photo already exists (for updates)
+            const existingIndex = photos.findIndex(p => p.public_id === photoData.public_id);
+            
+            if (existingIndex >= 0) {
+                // Update existing photo
+                photos[existingIndex] = { ...photos[existingIndex], ...photoData };
+            } else {
+                // Add new photo with default values
+                photoData = {
+                    isMain: false,  // Default to not main
+                    title: photoData.title || photoData.category + ' Photo',
+                    description: photoData.description || '',
+                    ...photoData
+                };
+                photos.unshift(photoData);
+            }
+            
+            // Ensure only one main photo per category
+            if (photoData.isMain) {
+                photos = photos.map(p => ({
+                    ...p,
+                    isMain: p.public_id === photoData.public_id ? true : 
+                           (p.category === photoData.category ? false : p.isMain)
+                }));
+            }
+            
+            localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+            return photoData; // Return the updated/created photo data
+        }
+
+        // Load photos from localStorage on page load
+        function loadPhotosFromLocalStorage() {
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const photoGrid = document.getElementById('photoGrid');
+            
+            const categoryColors = {
+                'Wedding': '#e74c3c',
+                'Maternity': '#f39c12',
+                'Portrait': '#9b59b6',
+                'Commercial': '#3498db',
+                'PreWedding': '#1abc9c',
+                'Newborn': '#e91e63'
+            };
+            
+            photos.forEach(photo => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                photoItem.setAttribute('data-category', photo.category);
+                photoItem.setAttribute('data-cloudinary-id', photo.public_id);
+                
+                photoItem.innerHTML = `
+                    <img src="${photo.url}" alt="${photo.title || photo.category + ' Photo'}" loading="lazy">
+                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
+                        ${photo.category} ${photo.isMain ? '★' : ''}
+                    </div>
+                    <div class="photo-actions">
+                        <button class="btn-edit" onclick="editPhoto(this)" data-id="${photo.public_id}">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-set-main ${photo.isMain ? 'active' : ''}" onclick="setAsMainPhoto('${photo.public_id}')" title="${photo.isMain ? 'Main Photo' : 'Set as main photo'}">
+                            <i class="fas fa-star"></i>
+                        </button>
+                        <button class="btn-delete" onclick="deletePhoto(this)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <div class="photo-info" style="display: none;">
+                        <h4>${photo.title || photo.category + ' Photo'}</h4>
+                        <p>${photo.description || 'No description'}</p>
+                    </div>
+                `;
+                
+                photoGrid.appendChild(photoItem);
+            });
+            
+            updatePhotoCount();
         }
 
         // Filter Photos by Category
@@ -1327,7 +1886,18 @@
         function deletePhoto(btn) {
             if (confirm('Are you sure you want to delete this photo?')) {
                 const photoItem = btn.closest('.photo-item');
+                const cloudinaryId = photoItem.getAttribute('data-cloudinary-id');
+                
+                // Remove from DOM
                 photoItem.remove();
+                
+                // Remove from localStorage
+                if (cloudinaryId) {
+                    let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                    photos = photos.filter(photo => photo.public_id !== cloudinaryId);
+                    localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                }
+                
                 updatePhotoCount();
                 
                 const photoAlert = document.getElementById('photoAlert');
@@ -1346,8 +1916,632 @@
             document.getElementById('totalCount').textContent = totalPhotos;
         }
 
-        // Initialize photo count on page load
-        updatePhotoCount();
+        // Edit Photo Function
+        function editPhoto(btn) {
+            const photoItem = btn.closest('.photo-item');
+            const photoId = btn.getAttribute('data-id');
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const photo = photos.find(p => p.public_id === photoId);
+            
+            if (!photo) return;
+            
+            // Create edit form
+            const form = document.createElement('div');
+            form.className = 'photo-edit-form';
+            form.style.position = 'absolute';
+            form.style.top = '0';
+            form.style.left = '0';
+            form.style.right = '0';
+            form.style.bottom = '0';
+            form.style.background = 'rgba(0,0,0,0.9)';
+            form.style.padding = '20px';
+            form.style.color = 'white';
+            form.style.zIndex = '10';
+            form.style.borderRadius = '8px';
+            form.style.overflowY = 'auto';
+            
+            // Populate form with current values
+            form.innerHTML = `
+                <h3>Edit Photo Details</h3>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Title</label>
+                    <input type="text" class="form-control" id="editPhotoTitle" value="${photo.title || ''}" style="width: 100%; padding: 8px; margin-top: 5px;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Category</label>
+                    <select id="editPhotoCategory" class="form-control" style="width: 100%; padding: 8px; margin-top: 5px;">
+                        <option value="Wedding" ${photo.category === 'Wedding' ? 'selected' : ''}>Wedding</option>
+                        <option value="Maternity" ${photo.category === 'Maternity' ? 'selected' : ''}>Maternity</option>
+                        <option value="Portrait" ${photo.category === 'Portrait' ? 'selected' : ''}>Portrait</option>
+                        <option value="Commercial" ${photo.category === 'Commercial' ? 'selected' : ''}>Commercial</option>
+                        <option value="PreWedding" ${photo.category === 'PreWedding' ? 'selected' : ''}>Pre-Wedding</option>
+                        <option value="Newborn" ${photo.category === 'Newborn' ? 'selected' : ''}>Newborn</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label>Description</label>
+                    <textarea id="editPhotoDescription" class="form-control" style="width: 100%; padding: 8px; margin-top: 5px; min-height: 100px;">${photo.description || ''}</textarea>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <button id="cancelEditPhoto" class="btn" style="background: #666; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">
+                        Cancel
+                    </button>
+                    <button id="savePhotoChanges" class="btn btn-primary" style="padding: 8px 15px;">
+                        Save Changes
+                    </button>
+                </div>
+            `;
+            
+            // Add form to photo item
+            photoItem.style.position = 'relative';
+            photoItem.appendChild(form);
+            
+            // Handle form submission
+            form.querySelector('#savePhotoChanges').addEventListener('click', () => {
+                const updatedPhoto = {
+                    ...photo,
+                    title: document.getElementById('editPhotoTitle').value.trim(),
+                    category: document.getElementById('editPhotoCategory').value,
+                    description: document.getElementById('editPhotoDescription').value.trim()
+                };
+                
+                // Save changes
+                savePhotoToLocalStorage(updatedPhoto);
+                
+                // Reload photos to reflect changes
+                const photoGrid = document.getElementById('photoGrid');
+                photoGrid.innerHTML = '';
+                loadPhotosFromLocalStorage();
+            });
+            
+            // Handle cancel
+            form.querySelector('#cancelEditPhoto').addEventListener('click', () => {
+                form.remove();
+            });
+        }
+        
+        // Set as Main Photo Function
+        function setAsMainPhoto(photoId) {
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const photo = photos.find(p => p.public_id === photoId);
+            
+            if (photo) {
+                // Update photo data
+                photo.isMain = true;
+                savePhotoToLocalStorage(photo);
+                
+                // Update UI
+                document.querySelectorAll('.photo-item').forEach(item => {
+                    const itemId = item.querySelector('.btn-edit')?.getAttribute('data-id');
+                    const starBtn = item.querySelector('.btn-set-main');
+                    const badge = item.querySelector('.photo-category-badge');
+                    
+                    if (itemId === photoId) {
+                        starBtn.classList.add('active');
+                        starBtn.title = 'Main Photo';
+                        if (badge) {
+                            badge.innerHTML = `${photo.category} ★`;
+                        }
+                    } else if (itemId && badge && item.getAttribute('data-category') === photo.category) {
+                        starBtn.classList.remove('active');
+                        starBtn.title = 'Set as main photo';
+                        if (badge) {
+                            badge.textContent = photo.category;
+                        }
+                    }
+                });
+                
+                // Show success message
+                const alert = document.getElementById('photoAlert');
+                alert.textContent = '✅ Main photo updated successfully!';
+                alert.style.display = 'block';
+                setTimeout(() => {
+                    alert.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Load and display portfolio photos
+        function loadPortfolioPhotos() {
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const featuredGrid = document.getElementById('featuredGrid');
+            const portfolioGrid = document.getElementById('portfolioGrid');
+            
+            // Clear existing content
+            featuredGrid.innerHTML = '';
+            portfolioGrid.innerHTML = '';
+            
+            const categoryColors = {
+                'Wedding': '#e74c3c',
+                'Maternity': '#f39c12',
+                'Portrait': '#9b59b6',
+                'Commercial': '#3498db',
+                'PreWedding': '#1abc9c',
+                'Newborn': '#e91e63'
+            };
+            
+            let featuredCount = 0;
+            
+            // Show featured photos (main photos)
+            photos.filter(photo => photo.isMain).forEach(photo => {
+                featuredCount++;
+                const featuredItem = document.createElement('div');
+                featuredItem.className = 'portfolio-featured-item';
+                featuredItem.setAttribute('data-category', photo.category);
+                featuredItem.innerHTML = `
+                    <div style="position: relative; border-radius: 10px; overflow: hidden; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                        <img src="${photo.url}" alt="${photo.title}" style="width: 100%; height: 200px; object-fit: cover; display: block;">
+                        <div style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
+                            ${photo.category} ★
+                        </div>
+                        <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.7), transparent); padding: 15px 10px 10px; color: white;">
+                            <h4 style="margin: 0; font-size: 1rem;">${photo.title}</h4>
+                            ${photo.description ? `<p style="margin: 5px 0 0; font-size: 0.85rem; opacity: 0.9;">${photo.description.substring(0, 50)}${photo.description.length > 50 ? '...' : ''}</p>` : ''}
+                        </div>
+                    </div>
+                `;
+                featuredGrid.appendChild(featuredItem);
+            });
+            
+            // Show message if no featured photos
+            if (featuredCount === 0) {
+                featuredGrid.innerHTML = `
+                    <div class="no-featured" style="grid-column: 1 / -1; text-align: center; padding: 40px; background: #f8f9fa; border-radius: 10px;">
+                        <i class="fas fa-star" style="font-size: 2rem; color: #ddd; margin-bottom: 10px;"></i>
+                        <p>No featured photos yet. Mark photos as "Main" in the Photos section to feature them here.</p>
+                        <button class="btn btn-primary" onclick="showSection('photos')" style="margin-top: 15px;">
+                            <i class="fas fa-images"></i> Go to Photos
+                        </button>
+                    </div>
+                `;
+            }
+            
+            // Show all portfolio items
+            photos.forEach((photo, index) => {
+                const portfolioItem = document.createElement('div');
+                portfolioItem.className = 'portfolio-item';
+                portfolioItem.setAttribute('data-category', photo.category);
+                portfolioItem.innerHTML = `
+                    <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <img src="${photo.url}" alt="${photo.title}" style="width: 100%; height: 150px; object-fit: cover; display: block;">
+                        <div style="position: absolute; top: 5px; left: 5px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">
+                            ${photo.category} ${photo.isMain ? '★' : ''}
+                        </div>
+                        <div style="padding: 10px; background: white;">
+                            <h4 style="margin: 0 0 5px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.title}</h4>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.8rem; color: #666;">${new Date(photo.uploaded_at).toLocaleDateString()}</span>
+                                <button class="btn-set-main ${photo.isMain ? 'active' : ''}" onclick="event.stopPropagation(); setAsMainPhoto('${photo.public_id}')" title="${photo.isMain ? 'Main Photo' : 'Set as main'}" style="background: none; border: none; cursor: pointer; color: ${photo.isMain ? '#ffd700' : '#ddd'}; padding: 2px 5px;">
+                                    <i class="fas fa-star"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                portfolioGrid.appendChild(portfolioItem);
+            });
+            
+            // Update counts
+            document.getElementById('visibleCount').textContent = photos.length;
+            document.getElementById('totalPortfolioCount').textContent = photos.length;
+        }
+        
+        // Filter portfolio items by category
+        function filterPortfolio(category) {
+            const items = document.querySelectorAll('.portfolio-item, .portfolio-featured-item');
+            let visibleCount = 0;
+            
+            items.forEach(item => {
+                if (category === 'all' || item.getAttribute('data-category') === category) {
+                    item.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Update active button
+            document.querySelectorAll('.portfolio-filters .btn').forEach(btn => {
+                btn.classList.remove('active');
+                if ((category === 'all' && btn.textContent.includes('All')) || 
+                    btn.textContent.includes(category + ' ')) {
+                    btn.classList.add('active');
+                }
+            });
+            
+            // Update visible count
+            document.getElementById('visibleCount').textContent = visibleCount;
+        }
+        
+        // Load and display category thumbnails
+        async function loadCategoryThumbnails() {
+            const thumbnailsGrid = document.getElementById('thumbnailsGrid');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            if (!thumbnailsGrid) {
+                console.error('Thumbnails grid element not found');
+                return;
+            }
+            
+            try {
+                if (loadingMessage) {
+                    loadingMessage.textContent = 'Loading categories...';
+                }
+                
+                const response = await fetch('galleries.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('Loaded galleries data:', data);
+                
+                if (!data || !data.categories) {
+                    throw new Error('Invalid data format: categories not found');
+                }
+                
+                if (loadingMessage) {
+                    loadingMessage.style.display = 'none';
+                }
+                
+                thumbnailsGrid.innerHTML = '';
+                
+                const categories = Object.entries(data.categories);
+                console.log(`Found ${categories.length} categories`);
+                
+                if (categories.length === 0) {
+                    thumbnailsGrid.innerHTML = '<div style="width: 100%; text-align: center; padding: 20px; color: #666;">No categories found</div>';
+                    return;
+                }
+                
+                categories.forEach(([category, categoryData]) => {
+                    const thumbnailCard = document.createElement('div');
+                    thumbnailCard.className = 'thumbnail-card';
+                    thumbnailCard.style.cssText = `
+                        background: white;
+                        border-radius: 10px;
+                        overflow: hidden;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    `;
+                    
+                    const thumbnailUrl = categoryData.thumbnail || 'https://via.placeholder.com/800x600?text=No+Image';
+                    
+                    thumbnailCard.innerHTML = `
+                        <div style="width: 100%; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
+                            <img src="${thumbnailUrl}" alt="${category} Thumbnail" style="max-width: 100%; max-height: 100%; object-fit: cover;" id="thumbnail-${category}">
+                        </div>
+                        <div style="padding: 15px; text-align: center;">
+                            <h3 style="margin: 0 0 15px 0; color: #2c3e50;">${category} Thumbnail</h3>
+                            <label style="display: inline-flex; align-items: center; gap: 8px; background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: background 0.3s ease;">
+                                <i class="fas fa-upload"></i> Change Thumbnail
+                                <input type="file" class="thumbnail-upload-input" data-category="${category}" accept="image/*" style="display: none;">
+                            </label>
+                        </div>
+                    `;
+                    
+                    thumbnailsGrid.appendChild(thumbnailCard);
+                    
+                    // Add event listener for file input
+                    const fileInput = thumbnailCard.querySelector('.thumbnail-upload-input');
+                    if (fileInput) {
+                        fileInput.addEventListener('change', handleThumbnailUpload);
+                    }
+                }); 
+            } catch (error) {
+                console.error('Error loading category thumbnails:', error);
+                showAlert('Error loading category thumbnails. Please try again.', 'error');
+            }
+        }
+        
+        // Handle thumbnail upload with Firebase Storage
+        async function handleThumbnailUpload(event) {
+            const file = event.target.files[0];
+            const category = event.target.getAttribute('data-category');
+            
+            if (!file || !category) {
+                console.error('No file or category specified');
+                return;
+            }
+            
+            // Check if Firebase is initialized
+            if (!storage || !db) {
+                console.error('Firebase storage or database not initialized');
+                showAlert('Error: Firebase not properly initialized. Please refresh the page.', 'error', 'thumbnailsAlert');
+                return;
+            }
+            
+            // Show loading state
+            showAlert(`Uploading ${category} thumbnail...`, 'info', 'thumbnailsAlert');
+            
+            try {
+                // Create a reference to the file in Firebase Storage
+                const fileExtension = file.name.split('.').pop();
+                const fileName = `category-thumbnails/${category.toLowerCase()}_${Date.now()}.${fileExtension}`;
+                const storageRef = storage.ref(fileName);
+                
+                console.log('Starting upload to:', fileName);
+                
+                // Upload the file
+                const uploadTask = storageRef.put(file);
+                
+                // Monitor upload progress
+                uploadTask.on('state_changed', 
+                    (snapshot) => {
+                        // Progress monitoring (optional)
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log(`Upload is ${Math.round(progress)}% done`);
+                    },
+                    (error) => {
+                        // Handle unsuccessful uploads
+                        console.error('Upload failed:', error);
+                        showAlert(`Failed to upload ${category} thumbnail: ${error.message}`, 'error', 'thumbnailsAlert');
+                    },
+                    async () => {
+                        try {
+                            console.log('Upload completed, getting download URL...');
+                            // Get the download URL
+                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                            console.log('File available at', downloadURL);
+                            
+                            // Update the preview
+                            const previewImg = document.getElementById(`thumbnail-${category}`);
+                            if (previewImg) {
+                                previewImg.src = downloadURL;
+                                previewImg.onerror = function() {
+                                    console.error('Error loading image:', this.src);
+                                    showAlert('Error: The image could not be displayed.', 'error', 'thumbnailsAlert');
+                                };
+                            }
+                            
+                            // Update Firestore with the new thumbnail URL
+                            console.log('Updating Firestore...');
+                            await db.collection('categories').doc(category.toLowerCase()).set({
+                                name: category,
+                                thumbnail: downloadURL,
+                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                            }, { merge: true });
+                            
+                            console.log('Firestore update complete');
+                            
+                            // Update local galleries.json data
+                            if (typeof updateThumbnailInData === 'function') {
+                                updateThumbnailInData(category, downloadURL);
+                            } else {
+                                console.warn('updateThumbnailInData function not found');
+                            }
+                            
+                            showAlert(`✅ ${category} thumbnail updated successfully!`, 'success', 'thumbnailsAlert');
+                            
+                        } catch (error) {
+                            console.error('Error in upload completion:', error);
+                            showAlert(`Error: ${error.message}`, 'error', 'thumbnailsAlert');
+                        }
+                    }
+                );
+                
+            } catch (error) {
+                console.error('Error during upload:', error);
+                showAlert(`Upload error: ${error.message}`, 'error', 'thumbnailsAlert');
+            }
+            
+            // Reset the file input to allow re-uploading the same file
+            event.target.value = '';
+        }
+        
+        // Update thumbnail in the galleries.json data
+        async function updateThumbnailInData(category, thumbnailData) {
+            try {
+                // In a real implementation, you would send this to a server
+                // For this example, we'll update the local galleries.json and save to localStorage
+                const response = await fetch('galleries.json');
+                const data = await response.json();
+                
+                if (data.categories[category]) {
+                    // Update the thumbnail
+                    data.categories[category].thumbnail = thumbnailData;
+                    
+                    // Save back to localStorage (or send to server in a real implementation)
+                    localStorage.setItem('galleriesData', JSON.stringify(data));
+                    
+                    // Update the index.html to use the new thumbnail
+                    updateIndexThumbnail(category, thumbnailData);
+                }
+            } catch (error) {
+                console.error('Error updating thumbnail data:', error);
+                throw error;
+            }
+        }
+        
+        // Update the thumbnail in index.html
+        function updateIndexThumbnail(category, thumbnailData) {
+            // This function would be called after a successful thumbnail update
+            // to update the UI in index.html
+            console.log(`Thumbnail for ${category} updated successfully!`);
+            
+            // In a real implementation, you might want to update the UI here
+            // or trigger a refresh of the portfolio section
+        }
+        
+        // Show alert message
+        function showAlert(message, type = 'success', containerId = null) {
+            const alertDiv = containerId ? document.getElementById(containerId) : document.createElement('div');
+            if (!alertDiv) return;
+            
+            alertDiv.textContent = message;
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.display = 'block';
+            
+            if (!containerId) {
+                document.body.appendChild(alertDiv);
+                setTimeout(() => {
+                    alertDiv.remove();
+                }, 3000);
+            } else {
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load category thumbnails
+            loadCategoryThumbnails();
+            // Load photos from localStorage
+            loadPhotosFromLocalStorage();
+            updatePhotoCount();
+            loadPortfolioPhotos(); // Load portfolio items
+            
+            // Load testimonials from Firebase
+            loadTestimonialsFromFirebase();
+            
+            console.log('✅ Admin panel initialized');
+            console.log('✅ Firebase ready for: Testimonials, About, Contact');
+            console.log('✅ Supabase ready for: Photos');
+        });
+    </script>
+    
+    <!-- Load db.js for Supabase integration (for photos) -->
+    <script src="db.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- Firebase Database Helper (for other features) -->
+    <script src="firebase-db.js"></script>
+    
+    <!-- Firebase Configuration -->
+    <script src="firebase-config.js"></script>
+    
+    <!-- Initialize Firebase and load data -->
+    <script>
+        // Global Firebase services
+        let storage, db;
+        
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Initialize Firebase
+                if (typeof firebase !== 'undefined') {
+                    console.log('Firebase is available');
+                    
+                    // Initialize Firebase services
+                    storage = firebase.storage();
+                    db = firebase.firestore();
+                    
+                    console.log('Firebase services initialized');
+                    
+                    // Set up section navigation
+                    setupNavigation();
+                    
+                    // Load initial data
+                    await loadInitialData();
+                    
+                    // Show the first section by default
+                    showSection('dashboard');
+                } else {
+                    console.error('Firebase is not loaded');
+                    showAlert('Error: Firebase not loaded. Please check your internet connection.', 'error');
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                showAlert('Error initializing the application. Please try again.', 'error');
+            }
+        });
+        
+        function setupNavigation() {
+            // Set up section navigation
+            const menuLinks = document.querySelectorAll('.menu-link');
+            menuLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const sectionId = this.getAttribute('data-section');
+                    showSection(sectionId);
+                });
+            });
+            
+            // Set up any other button event listeners here
+            document.addEventListener('click', function(e) {
+                // Handle button clicks
+                if (e.target.closest('.btn-upload')) {
+                    const fileInput = e.target.closest('.btn-upload').querySelector('input[type="file"]');
+                    if (fileInput) fileInput.click();
+                }
+            });
+        }
+        
+        async function loadInitialData() {
+            try {
+                // Load categories when the page loads
+                if (typeof loadCategoryThumbnails === 'function') {
+                    await loadCategoryThumbnails();
+                } else {
+                    console.error('loadCategoryThumbnails function not found');
+                }
+                
+                // Add any other initial data loading here
+                
+            } catch (error) {
+                console.error('Error loading initial data:', error);
+                throw error;
+            }
+        }
+        
+        // Function to show a specific section
+        function showSection(sectionId) {
+            console.log('Showing section:', sectionId);
+            
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Remove active class from all menu items
+            document.querySelectorAll('.menu-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show the selected section
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.style.display = 'block';
+                // Add active class to the clicked menu item
+                const activeLink = document.querySelector(`.menu-link[data-section="${sectionId}"]`);
+                if (activeLink) {
+                    activeLink.classList.add('active');
+                }
+            } else {
+                console.warn(`Section with ID '${sectionId}' not found`);
+            }
+            
+            // Special handling for specific sections
+            if (sectionId === 'categoryThumbnails') {
+                // Refresh thumbnails when navigating to this section
+                if (typeof loadCategoryThumbnails === 'function') {
+                    loadCategoryThumbnails();
+                }
+            }
+        }
+        
+        // Global function to show alerts
+        function showAlert(message, type = 'info', containerId = 'mainAlert') {
+            const alertDiv = document.getElementById(containerId) || document.createElement('div');
+            alertDiv.textContent = message;
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.style.display = 'block';
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alertDiv.style.display = 'none';
+            }, 5000);
+            
+            // If it's a new alert, add it to the body
+            if (!document.getElementById(containerId)) {
+                alertDiv.id = containerId;
+                document.body.appendChild(alertDiv);
+            }
+        }
     </script>
 </body>
 </html>

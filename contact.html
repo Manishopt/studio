@@ -69,9 +69,11 @@
 
         /* ===== NAVIGATION ===== */
         .navbar {
-            position: sticky;
+            position: fixed;
             top: 0;
-            background: rgba(0, 0, 0, 0.85);
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.4);
             padding: 15px 50px;
             display: flex;
             justify-content: space-between;
@@ -79,6 +81,11 @@
             z-index: 1000;
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .navbar.scrolled {
+            background: rgba(0, 0, 0, 0.8);
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
         }
 
@@ -1063,7 +1070,23 @@
     </div>
 
     <script>
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
+        // Initialize navbar state on page load
         document.addEventListener('DOMContentLoaded', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            }
+            
             // Form submission handler
             const contactForm = document.getElementById('contactForm');
             if (contactForm) {

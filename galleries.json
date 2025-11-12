@@ -1,20 +1,34 @@
 {
-  "Wedding": [
-    "Image/Wedding1.jpg",
-    "Image/Wedding2.jpg",
-    "Image/Wedding3.jpg"
-  ],
-  "Maternity": [
-    "Image/Maternity1.jpg",
-    "Image/Maternity2.jpg"
-  ],
-  "Portrait": [
-    "Image/Portrait1.jpg",
-    "Image/Portrait2.jpg",
-    "Image/Portrait3.jpg"
-  ],
-  "Commercial": [
-    "Image/Commercial1.jpg",
-    "Image/Commercial2.jpg"
-  ]
+  "categories": {
+    "Wedding": {
+      "thumbnail": "https://picsum.photos/id/15/800/600",
+      "images": [
+        "https://picsum.photos/id/15/800/600",
+        "https://picsum.photos/id/16/800/600",
+        "https://picsum.photos/id/17/800/600"
+      ]
+    },
+    "Maternity": {
+      "thumbnail": "https://picsum.photos/id/20/800/600",
+      "images": [
+        "https://picsum.photos/id/20/800/600",
+        "https://picsum.photos/id/21/800/600"
+      ]
+    },
+    "Portrait": {
+      "thumbnail": "https://picsum.photos/id/1005/800/600",
+      "images": [
+        "https://picsum.photos/id/1005/800/600",
+        "https://picsum.photos/id/1011/800/600",
+        "https://picsum.photos/id/1012/800/600"
+      ]
+    },
+    "Commercial": {
+      "thumbnail": "https://picsum.photos/id/0/800/600",
+      "images": [
+        "https://picsum.photos/id/0/800/600",
+        "https://picsum.photos/id/1/800/600"
+      ]
+    }
+  }
 }

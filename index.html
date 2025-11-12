@@ -197,19 +197,36 @@
             transition: top 0.15s ease, left 0.15s ease;
         }
 
-        /* ===== NAVIGATION ===== */
+        /* Navigation Bar */
         nav {
-            position: sticky;
+            position: fixed;
             top: 0;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 15px 50px;
+            left: 0;
+            right: 0;
+            background: transparent;
+            padding: 20px 50px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
+            transition: all 0.3s ease;
             backdrop-filter: blur(10px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Dark theme specific navbar styles */
+        [data-theme="dark"] nav {
+            background: transparent;
+        }
+        
+        /* Navbar on scroll */
+        nav.scrolled {
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        [data-theme="dark"] nav.scrolled {
+            background: rgba(15, 23, 42, 0.95);
         }
 
         .nav-logo {
@@ -1378,9 +1395,6 @@
             "Tejender was amazing! She made us feel so comfortable and the photos turned out better than we ever imagined." — <strong>Shobit & Kavita</strong>
         </blockquote>
         <blockquote>
-            "Incredible eye for detail
-        </blockquote>
-        <blockquote>
             "Absolutely blown away by the photos! You didn't just take pictures—you captured memories. Every shot tells a story, and I'll treasure them forever. Professional, creative, and easy to work with. Highly recommend!" — <strong>Jay</strong>
         </blockquote>
         <blockquote>
@@ -1443,7 +1457,9 @@
     <!-- Studio Location -->
     <section>
         <h2>Studio Location</h2>
-        <p>Visit our studio at 456 Jagatpura Lens Street, Jaipur, 303505. We're near the CBI Fathak.</p>
+        <p>Visit our studio at Vrinda Gardens,
+
+      Jagatpura, Jaipur,302017 We're near the Near JNU College.</p>
     </section>
 
     <!-- Contact Section -->
@@ -1494,21 +1510,27 @@
 
     <!-- Custom Scripts -->
     <script>
-        // Dynamic gallery: show placeholder images in the modal
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Initialize navbar state on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const nav = document.querySelector('nav');
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            }
+        });
+
+        // Dynamic gallery: show uploaded images from localStorage
         async function openGallery(category) {
             try {
-                // Use placeholder images for demo purposes
-                const placeholderImages = [
-                    'https://source.unsplash.com/random/800x600?photography',
-                    'https://source.unsplash.com/random/800x600?portrait',
-                    'https://source.unsplash.com/random/800x600?wedding',
-                    'https://source.unsplash.com/random/800x600?maternity',
-                    'https://source.unsplash.com/random/800x600?couple',
-                    'https://source.unsplash.com/random/800x600?bride',
-                    'https://source.unsplash.com/random/800x600?groom',
-                    'https://source.unsplash.com/random/800x600?ceremony'
-                ];
-                
                 const modal = document.getElementById('dynamicGalleryModal');
                 if (!modal) {
                     console.error('Modal element not found');
@@ -1523,7 +1545,7 @@
                 
                 const titleElement = modal.querySelector('.modal-title');
                 if (titleElement) {
-                    titleElement.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+                    titleElement.textContent = category.charAt(0).toUpperCase() + category.slice(1) + ' Photography';
                 }
                 
                 const fullGalleryLink = document.getElementById('openFullGallery');
@@ -1533,42 +1555,52 @@
                 
                 grid.innerHTML = '';
 
-                placeholderImages.forEach((src, index) => {
-                    const a = document.createElement('a');
-                    a.href = src;
-                    a.setAttribute('data-lightbox', category);
-                    a.style.display = 'inline-block';
-                    a.style.margin = '5px';
-                    
-                    const img = document.createElement('img');
-                    img.src = src;
-                    img.alt = `${category} ${index + 1}`;
-                    img.loading = 'lazy';
-                    img.style.width = '200px';
-                    img.style.height = '130px';
-                    img.style.objectFit = 'cover';
-                    img.style.borderRadius = '8px';
-                    img.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)';
-                    img.style.transition = 'transform 0.3s ease';
-                    
-                    // Add hover effect
-                    img.addEventListener('mouseover', () => {
-                        img.style.transform = 'scale(1.05)';
+                // Load photos from localStorage
+                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                const categoryPhotos = photos.filter(photo => photo.category === category);
+                
+                // If no uploaded photos found, show placeholder message
+                if (categoryPhotos.length === 0) {
+                    grid.innerHTML = '<p style="color: var(--text-dark); padding: 20px; text-align: center; width: 100%;">No photos uploaded yet in this category. Upload photos from the admin panel to see them here!</p>';
+                } else {
+                    // Display uploaded photos
+                    categoryPhotos.forEach((photo, index) => {
+                        const a = document.createElement('a');
+                        a.href = photo.url;
+                        a.setAttribute('data-lightbox', category);
+                        a.style.display = 'inline-block';
+                        a.style.margin = '5px';
+                        
+                        const img = document.createElement('img');
+                        img.src = photo.url;
+                        img.alt = `${category} ${index + 1}`;
+                        img.loading = 'lazy';
+                        img.style.width = '200px';
+                        img.style.height = '130px';
+                        img.style.objectFit = 'cover';
+                        img.style.borderRadius = '8px';
+                        img.style.boxShadow = '0 4px 14px rgba(0,0,0,0.15)';
+                        img.style.transition = 'transform 0.3s ease';
+                        
+                        // Add hover effect
+                        img.addEventListener('mouseover', () => {
+                            img.style.transform = 'scale(1.05)';
+                        });
+                        
+                        img.addEventListener('mouseout', () => {
+                            img.style.transform = 'scale(1)';
+                        });
+                        
+                        a.appendChild(img);
+                        grid.appendChild(a);
                     });
-                    
-                    img.addEventListener('mouseout', () => {
-                        img.style.transform = 'scale(1)';
-                    });
-                    
-                    a.appendChild(img);
-                    grid.appendChild(a);
-                });
+                }
 
                 modal.style.display = 'block';
                 modal.setAttribute('aria-hidden', 'false');
                 document.body.style.overflow = 'hidden';
             } catch (err) {
-                console.error('Failed to load gallery manifest', err);
+                console.error('Failed to load gallery', err);
                 window.location.href = `gallery.html?category=${encodeURIComponent(category)}`;
             }
         }
