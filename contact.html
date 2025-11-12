@@ -48,6 +48,11 @@
             --text-light: #e2e8f0;
             --shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
             --card-bg: #1e293b;
+            --card-item-bg: rgba(255, 255, 255, 0.05);
+        }
+        
+        [data-theme="light"] {
+            --card-item-bg: rgba(0, 0, 0, 0.02);
         }
 
         html {
@@ -73,20 +78,32 @@
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.4);
-            padding: 15px 50px;
+            background: transparent !important;
+            padding: 12px 15px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             z-index: 1000;
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             transition: all 0.3s ease;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            background-color: transparent !important;
+            height: 60px; /* Fixed height for consistency */
+            box-sizing: border-box;
         }
         
         .navbar.scrolled {
-            background: rgba(0, 0, 0, 0.8);
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            background-color: rgba(0, 0, 0, 0.9) !important;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Ensure text is visible in both light and dark themes */
+        [data-theme="light"] .navbar {
+            --text-light: #f0f0f0; /* Light gray instead of pure white */
+        }
+        
+        [data-theme="dark"] .navbar {
+            --text-light: #e6e6e6; /* Slightly darker gray for dark theme */
         }
 
         .nav-container {
@@ -97,17 +114,66 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+        }
+        
+        .nav-center {
+            flex: 1;
+            min-width: 20px; /* Ensures some space between logo and right-aligned items */
+        }
+        
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .nav-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #e6e6e6; /* Light gray instead of pure white */
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+        }
+        
+        .nav-back:hover {
+            color: var(--primary-color);
+        }
+        
+        .theme-toggle {
+            background: rgba(230, 230, 230, 0.1);
+            border: 1px solid rgba(230, 230, 230, 0.3);
+            color: #f0f0f0; /* Light gray instead of pure white */
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .theme-toggle:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.1);
         }
 
         .nav-logo {
             font-family: 'Montserrat', sans-serif;
             font-size: 1.8rem;
             font-weight: 700;
-            color: var(--text-light);
+            color: #f0f0f0; /* Light gray instead of pure white */
             text-decoration: none;
             letter-spacing: 3px;
             text-transform: uppercase;
-            text-shadow: 2px 2px 8px rgba(255,182,193,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
             transition: var(--transition);
         }
 
@@ -164,24 +230,19 @@
 
         /* Hero Section */
         .hero {
-            background: var(--gradient);
-            padding: 30px 30px;
-            text-align: center;
-            color: var(--white);
             position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            padding: 100px 0 60px;
+            margin-top: 0;
+            text-align: center;
+            color: var(--text-dark);
+            z-index: 1;
             background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255,255,255,0.1)" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,144C960,149,1056,139,1152,122.7C1248,107,1344,85,1392,74.7L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>') no-repeat bottom;
             background-size: cover;
-            opacity: 0.3;
+            opacity: 1;
+            min-height: 200px; /* Ensure minimum height */
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .hero-content {
@@ -255,17 +316,19 @@
             gap: 20px;
             padding: 20px;
             margin: 15px 0;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--card-item-bg, rgba(255, 255, 255, 0.05));
             border-radius: 15px;
-            transition: var(--transition);
+            transition: all 0.3s ease;
             border-left: 4px solid transparent;
             backdrop-filter: blur(5px);
+            color: var(--text-dark);
         }
 
         .contact-item:hover {
-            background: #fff;
+            background: var(--card-bg);
             border-left-color: var(--primary);
             transform: translateX(10px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
         }
 
         .contact-icon {
@@ -602,7 +665,16 @@
 
         @media (max-width: 768px) {
             .navbar {
-                padding: 15px 0;
+                padding: 10px 15px !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                background-color: transparent !important;
+            }
+            
+            .hero {
+                padding: 120px 0 80px !important;
+                margin-top: 60px;
             }
 
             .nav-container {
@@ -623,7 +695,8 @@
             }
 
             .hero {
-                padding: 25px 15px;
+                padding: 120px 15px 30px; /* Added top padding to account for fixed navbar */
+                margin-top: 0;
             }
 
             .hero h1 {
@@ -635,8 +708,9 @@
             }
 
             .container {
-                margin: -15px auto 30px;
+                margin: 0 auto 30px;
                 padding: 0 15px;
+                padding-top: 20px; /* Add some space below navbar */
             }
 
             .contact-grid {
@@ -729,9 +803,61 @@
         }
 
         @media (max-width: 600px) {
+            .navbar {
+                padding: 8px 10px !important;
+                background: transparent !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                position: fixed !important;
+                z-index: 1000;
+            }
+            
+            .hero {
+                padding: 120px 15px 60px !important;
+                margin-top: 60px;
+            }
+            
+            .navbar.scrolled {
+                background: rgba(0, 0, 0, 0.9) !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            }
+            
             .hero, .contact-card, .map-card, .form-card, .social-card {
                 padding: 20px;
                 border-radius: 12px;
+            }
+            
+            .navbar {
+                padding: 10px 15px;
+                background: transparent !important;
+            }
+            
+            .navbar.scrolled {
+                background: rgba(0, 0, 0, 0.7) !important;
+            }
+            
+            .nav-container {
+                padding: 0 15px;
+            }
+            
+            .nav-logo {
+                font-size: 1.5rem;
+            }
+            
+            .back-text {
+                display: none;
+            }
+            
+            .nav-back {
+                padding: 8px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 50%;
+            }
+            
+            .nav-actions {
+                gap: 10px;
             }
 
             .contact-grid {
@@ -861,14 +987,21 @@
     <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
+            <!-- Logo on the left -->
             <a href="index.html" class="nav-logo">TJ Clicks</a>
+            
+            <!-- Center area (empty for spacing) -->
+            <div class="nav-center"></div>
+            
+            <!-- Right side actions -->
             <div class="nav-actions">
+                <a href="index.html" class="nav-back">
+                    <i class="fas fa-arrow-left"></i>
+                    <span class="back-text">Back to Home</span>
+                </a>
                 <button class="theme-toggle" id="theme-toggle" aria-label="Toggle theme">
                     <i class="fas fa-moon"></i>
                 </button>
-                <a href="index.html" class="nav-back">
-                    <i class="fas fa-arrow-left"></i> Back to Home
-                </a>
             </div>
         </div>
     </nav>
