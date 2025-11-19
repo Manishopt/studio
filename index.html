@@ -388,11 +388,50 @@
             transform: translateY(-5px);
         }
         
+        .portfolio-grid figure img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+        }
+        
         .portfolio-grid figcaption {
             padding: 15px;
             text-align: center;
             color: var(--text-dark);
             font-weight: 600;
+        }
+
+        .portfolio-placeholder {
+            height: 250px;
+            background: var(--card-bg);
+            border-radius: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px dashed var(--primary-color);
+        }
+
+        .portfolio-placeholder:hover {
+            transform: scale(1.05);
+            border-color: var(--accent-color);
+            background: var(--card-item-bg);
+        }
+
+        .portfolio-placeholder i {
+            font-size: 3rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .portfolio-placeholder span {
+            color: var(--text-dark);
+            font-weight: 600;
+            text-align: center;
+            padding: 0 10px;
         }
 
         /* ===== SERVICES LIST ===== */
@@ -1347,26 +1386,8 @@
         <h2>Portfolio</h2>
         <p>Explore our collection of stunning photography. Click on any image to learn more about each shoot.</p>
         
-        <div class="portfolio-grid">
-            <figure>
-                <img src="Image/Wedding.jpg" alt="Wedding Photography" onclick="openGallery('Wedding')">
-                <figcaption>Wedding Photography</figcaption>
-            </figure>
-
-            <figure>
-                <img src="Image/Maternity.jpg" alt="Maternity Photography" onclick="openGallery('Maternity')">
-                <figcaption>Maternity Photography</figcaption>
-            </figure>
-
-            <figure>
-                <img src="Image/Portrait.jpg" alt="Portrait Photography" onclick="openGallery('Portrait')">
-                <figcaption>Portrait Photography</figcaption>
-            </figure>
-
-            <figure>
-                <img src="Image/Commercial-Photoshoot.jpg" alt="Commercial Photography" onclick="openGallery('Commercial')">
-                <figcaption>Commercial Photography</figcaption>
-            </figure>
+        <div class="portfolio-grid" id="portfolioGrid">
+            <!-- Portfolio items will be dynamically loaded here -->
         </div>
     </section>
  
@@ -1453,7 +1474,7 @@
         <h2>Music Vibes While You Scroll</h2>
         <div class="music-container">
             <img src="https://picsum.photos/id/24/200/200" alt="Album Cover" class="album-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=No+Image'">
-            <audio id="audio-player" src="music/Kina - Can We Kiss Forever (Instrumental - Official Audio) ft. Adriana Proenza - KinaVEVO.mp3"></audio>
+            <audio id="audio-player" src=""></audio>
             
             <div class="controls">
                 <button onclick="rewindMusic()" aria-label="Rewind"><i class="fas fa-backward"></i></button>
@@ -1507,14 +1528,18 @@
     <!-- External Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
     <script>
-        // Initialize lightbox with options
-        lightbox.option({
-            'resizeDuration': 200,
-            'wrapAround': true,
-            'alwaysShowNavOnTouchDevices': true,
-            'disableScrolling': true,
-            'positionFromTop': 100
-        });
+        // Initialize lightbox with options (if available)
+        if (typeof lightbox !== 'undefined') {
+            lightbox.option({
+                'resizeDuration': 200,
+                'wrapAround': true,
+                'alwaysShowNavOnTouchDevices': true,
+                'disableScrolling': true,
+                'positionFromTop': 100
+            });
+        } else {
+            console.warn('Lightbox not loaded - gallery images will open in new tab');
+        }
     </script>
 
     <!-- Custom Scripts -->
@@ -1535,7 +1560,120 @@
             if (window.scrollY > 50) {
                 nav.classList.add('scrolled');
             }
+            
+            // Load portfolio items from admin panel uploads
+            loadPortfolioItems();
         });
+
+        // Load portfolio items dynamically from localStorage and Supabase
+        function loadPortfolioItems() {
+            const portfolioGrid = document.getElementById('portfolioGrid');
+            if (!portfolioGrid) return;
+            
+            // Load photos from localStorage
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            
+            // Group photos by category
+            const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial'];
+            const categoryIcons = {
+                'Wedding': 'fa-camera',
+                'Maternity': 'fa-baby', 
+                'Portrait': 'fa-user',
+                'Commercial': 'fa-briefcase'
+            };
+            
+            // Load thumbnails from Supabase
+            loadThumbnailsFromSupabase().then(thumbnails => {
+                console.log('🖼️ Thumbnails loaded from Supabase:', thumbnails);
+                
+                categories.forEach(category => {
+                    const categoryPhotos = photos.filter(photo => photo.category === category);
+                    const figure = document.createElement('figure');
+                    
+                    // Check if we have a custom thumbnail for this category
+                    const categoryThumbnail = thumbnails.find(t => t.category === category);
+                    
+                    if (categoryThumbnail && categoryThumbnail.thumbnail_url) {
+                        // Use uploaded thumbnail from admin panel
+                        figure.innerHTML = `
+                            <img src="${categoryThumbnail.thumbnail_url}" alt="${category} Photography" onclick="openGallery('${category}')" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${category.toLowerCase()}/400/300.jpg';">
+                            <figcaption>${category} Photography</figcaption>
+                        `;
+                    } else if (categoryPhotos.length > 0) {
+                        // Show first photo from category as thumbnail
+                        const thumbnail = categoryPhotos[0];
+                        figure.innerHTML = `
+                            <img src="${thumbnail.url}" alt="${category} Photography" onclick="openGallery('${category}')">
+                            <figcaption>${category} Photography</figcaption>
+                        `;
+                    } else {
+                        // Show placeholder if no photos uploaded
+                        figure.innerHTML = `
+                            <div class="portfolio-placeholder" onclick="openGallery('${category}')">
+                                <i class="fas ${categoryIcons[category]}"></i>
+                                <span>${category} Photography</span>
+                            </div>
+                            <figcaption>${category} Photography</figcaption>
+                        `;
+                    }
+                    
+                    portfolioGrid.appendChild(figure);
+                });
+            }).catch(error => {
+                console.error('Error loading thumbnails:', error);
+                // Fallback to original behavior if Supabase fails
+                categories.forEach(category => {
+                    const categoryPhotos = photos.filter(photo => photo.category === category);
+                    const figure = document.createElement('figure');
+                    
+                    if (categoryPhotos.length > 0) {
+                        const thumbnail = categoryPhotos[0];
+                        figure.innerHTML = `
+                            <img src="${thumbnail.url}" alt="${category} Photography" onclick="openGallery('${category}')">
+                            <figcaption>${category} Photography</figcaption>
+                        `;
+                    } else {
+                        figure.innerHTML = `
+                            <div class="portfolio-placeholder" onclick="openGallery('${category}')">
+                                <i class="fas ${categoryIcons[category]}"></i>
+                                <span>${category} Photography</span>
+                            </div>
+                            <figcaption>${category} Photography</figcaption>
+                        `;
+                    }
+                    
+                    portfolioGrid.appendChild(figure);
+                });
+            });
+        }
+
+        // Load thumbnails from Supabase
+        async function loadThumbnailsFromSupabase() {
+            const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
+            const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
+            
+            try {
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const thumbnails = await response.json();
+                console.log('📥 Successfully loaded thumbnails from Supabase:', thumbnails);
+                return thumbnails;
+            } catch (error) {
+                console.error('❌ Error loading thumbnails from Supabase:', error);
+                return []; // Return empty array on error
+            }
+        }
 
         // Dynamic gallery: show uploaded images from localStorage
         async function openGallery(category) {
@@ -1576,7 +1714,16 @@
                     categoryPhotos.forEach((photo, index) => {
                         const a = document.createElement('a');
                         a.href = photo.url;
-                        a.setAttribute('data-lightbox', category);
+                        
+                        // Use lightbox if available, otherwise open in new tab
+                        if (typeof lightbox !== 'undefined') {
+                            a.setAttribute('data-lightbox', category);
+                            a.setAttribute('data-title', `${category} Photo ${index + 1}`);
+                        } else {
+                            a.setAttribute('target', '_blank');
+                            a.setAttribute('rel', 'noopener noreferrer');
+                        }
+                        
                         a.style.display = 'inline-block';
                         a.style.margin = '5px';
                         
