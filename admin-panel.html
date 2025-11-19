@@ -2166,14 +2166,78 @@
             try {
                 if (loadingMessage) {
                     loadingMessage.textContent = 'Loading categories...';
+                    loadingMessage.style.display = 'block';
                 }
                 
-                const response = await fetch('galleries.json');
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
+                // Try to load from local storage first for better performance
+                const cachedData = localStorage.getItem('galleriesData');
+                let data;
+                
+                if (cachedData) {
+                    try {
+                        data = JSON.parse(cachedData);
+                        console.log('Using cached galleries data');
+                    } catch (e) {
+                        console.warn('Error parsing cached data, fetching fresh...', e);
+                        localStorage.removeItem('galleriesData');
+                    }
                 }
                 
-                const data = await response.json();
+                // If no cached data or error, fetch fresh
+                if (!data) {
+                    try {
+                        // Try to fetch from the same directory first
+                        let response = await fetch('galleries.json', {
+                            headers: {
+                                'Cache-Control': 'no-cache',
+                                'Pragma': 'no-cache'
+                            }
+                        });
+                        
+                        // If that fails, try with .json extension
+                        if (!response.ok) {
+                            response = await fetch('galleries.json', {
+                                headers: {
+                                    'Cache-Control': 'no-cache',
+                                    'Pragma': 'no-cache'
+                                }
+                            });
+                        }
+                        
+                        if (!response.ok) {
+                            // If still failing, use default data
+                            console.warn('Using default gallery data due to fetch error');
+                            data = {
+                                categories: {
+                                    "Wedding": {
+                                        thumbnail: "https://picsum.photos/id/15/800/600",
+                                        images: ["https://picsum.photos/id/15/800/600"]
+                                    },
+                                    "Maternity": {
+                                        thumbnail: "https://picsum.photos/id/20/800/600",
+                                        images: ["https://picsum.photos/id/20/800/600"]
+                                    },
+                                    "Portrait": {
+                                        thumbnail: "https://picsum.photos/id/1005/800/600",
+                                        images: ["https://picsum.photos/id/1005/800/600"]
+                                    },
+                                    "Commercial": {
+                                        thumbnail: "https://picsum.photos/id/0/800/600",
+                                        images: ["https://picsum.photos/id/0/800/600"]
+                                    }
+                                }
+                            };
+                        } else {
+                            data = await response.json();
+                            // Cache the data
+                            localStorage.setItem('galleriesData', JSON.stringify(data));
+                        }
+                    } catch (fetchError) {
+                        console.error('Error fetching galleries:', fetchError);
+                        throw new Error('Failed to load gallery data. Please check your internet connection and try again.');
+                    }
+                }
+                
                 console.log('Loaded galleries data:', data);
                 
                 if (!data || !data.categories) {
@@ -2194,6 +2258,9 @@
                     return;
                 }
                 
+                // Process each category
+                const fragment = document.createDocumentFragment();
+                
                 categories.forEach(([category, categoryData]) => {
                     const thumbnailCard = document.createElement('div');
                     thumbnailCard.className = 'thumbnail-card';
@@ -2202,38 +2269,108 @@
                         border-radius: 10px;
                         overflow: hidden;
                         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        transition: transform 0.2s ease, box-shadow 0.2s ease;
                     `;
                     
-                    const thumbnailUrl = categoryData.thumbnail || 'https://via.placeholder.com/800x600?text=No+Image';
+                    // Add hover effect
+                    thumbnailCard.onmouseenter = () => {
+                        thumbnailCard.style.transform = 'translateY(-5px)';
+                        thumbnailCard.style.boxShadow = '0 5px 15px rgba(0,0,0,0.15)';
+                    };
+                    thumbnailCard.onmouseleave = () => {
+                        thumbnailCard.style.transform = 'none';
+                        thumbnailCard.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+                    };
+                    
+                    // Get thumbnail URL with cache-busting parameter
+                    let thumbnailUrl = categoryData.thumbnail || 
+                                    (categoryData.images && categoryData.images.length > 0 ? 
+                                     categoryData.images[0] : 
+                                     'https://via.placeholder.com/800x600?text=No+Image');
+                    
+                    // Ensure we have a valid URL
+                    if (!thumbnailUrl) {
+                        thumbnailUrl = 'https://via.placeholder.com/800x600?text=No+Image';
+                    } else if (thumbnailUrl.startsWith('http')) {
+                        // If it's already an HTTP URL, add cache-busting
+                        const separator = thumbnailUrl.includes('?') ? '&' : '?';
+                        thumbnailUrl += `${separator}t=${Date.now()}`;
+                    } else if (!thumbnailUrl.startsWith('data:')) {
+                        // Handle relative paths
+                        thumbnailUrl = thumbnailUrl.startsWith('/') ? 
+                            window.location.origin + thumbnailUrl : 
+                            window.location.origin + '/' + thumbnailUrl;
+                        // Add cache-busting
+                        thumbnailUrl += (thumbnailUrl.includes('?') ? '&' : '?') + `t=${Date.now()}`;
+                    }
                     
                     thumbnailCard.innerHTML = `
-                        <div style="width: 100%; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
-                            <img src="${thumbnailUrl}" alt="${category} Thumbnail" style="max-width: 100%; max-height: 100%; object-fit: cover;" id="thumbnail-${category}">
+                        <div style="width: 100%; height: 200px; overflow: hidden; display: flex; align-items: center; justify-content: center; background: #f5f5f5; position: relative;">
+                            <img src="${thumbnailUrl}" 
+                                 alt="${category} Thumbnail" 
+                                 style="width: 100%; height: 100%; object-fit: cover;" 
+                                 id="thumbnail-${category}"
+                                 onerror="this.onerror=null; this.src='https://via.placeholder.com/800x600?text=Image+Not+Found'"
+                            >
+                            <div class="category-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s ease;">
+                                <span style="color: white; font-weight: bold; font-size: 1.2rem;">${category}</span>
+                            </div>
                         </div>
                         <div style="padding: 15px; text-align: center;">
-                            <h3 style="margin: 0 0 15px 0; color: #2c3e50;">${category} Thumbnail</h3>
-                            <label style="display: inline-flex; align-items: center; gap: 8px; background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: background 0.3s ease;">
+                            <h3 style="margin: 0 0 15px 0; color: #2c3e50; font-size: 1.1rem;">${category} Thumbnail</h3>
+                            <label class="upload-btn" style="display: inline-flex; align-items: center; gap: 8px; background: #2c3e50; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; transition: background 0.3s ease; font-size: 0.9rem;">
                                 <i class="fas fa-upload"></i> Change Thumbnail
                                 <input type="file" class="thumbnail-upload-input" data-category="${category}" accept="image/*" style="display: none;">
                             </label>
                         </div>
                     `;
                     
-                    thumbnailsGrid.appendChild(thumbnailCard);
-                    
-                    // Add event listener for file input
-                    const fileInput = thumbnailCard.querySelector('.thumbnail-upload-input');
-                    if (fileInput) {
-                        fileInput.addEventListener('change', handleThumbnailUpload);
-                    }
-                }); 
+                    fragment.appendChild(thumbnailCard);
+                });
+                
+                thumbnailsGrid.appendChild(fragment);
+                
+                // Add event listeners after all elements are in the DOM
+                document.querySelectorAll('.thumbnail-upload-input').forEach(input => {
+                    input.addEventListener('change', handleThumbnailUpload);
+                });
+                
+                // Add hover effect for upload buttons
+                document.querySelectorAll('.upload-btn').forEach(btn => {
+                    btn.addEventListener('mouseenter', function() {
+                        this.style.background = '#1a2634';
+                    });
+                    btn.addEventListener('mouseleave', function() {
+                        this.style.background = '#2c3e50';
+                    });
+                });
+                
+                console.log('Thumbnails loaded successfully');
             } catch (error) {
                 console.error('Error loading category thumbnails:', error);
-                showAlert('Error loading category thumbnails. Please try again.', 'error');
+                const errorMessage = error.message || 'An unknown error occurred';
+                showAlert(`Error loading category thumbnails: ${errorMessage}`, 'error', 'thumbnailsAlert');
+                
+                // Show error in the grid if possible
+                if (thumbnailsGrid) {
+                    thumbnailsGrid.innerHTML = `
+                        <div style="width: 100%; text-align: center; padding: 20px; color: #e74c3c;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; margin-bottom: 10px;"></i>
+                            <p>Failed to load thumbnails. ${errorMessage}</p>
+                            <button onclick="loadCategoryThumbnails()" style="margin-top: 10px; padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                <i class="fas fa-sync-alt"></i> Retry
+                            </button>
+                        </div>
+                    `;
+                }
+            } finally {
+                if (loadingMessage) {
+                    loadingMessage.style.display = 'none';
+                }
             }
         }
         
-        // Handle thumbnail upload with Firebase Storage
+        // Handle thumbnail upload with Cloudinary
         async function handleThumbnailUpload(event) {
             const file = event.target.files[0];
             const category = event.target.getAttribute('data-category');
@@ -2243,10 +2380,9 @@
                 return;
             }
             
-            // Check if Firebase is initialized
-            if (!storage || !db) {
-                console.error('Firebase storage or database not initialized');
-                showAlert('Error: Firebase not properly initialized. Please refresh the page.', 'error', 'thumbnailsAlert');
+            // Check file size (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('Error: File size should be less than 5MB', 'error', 'thumbnailsAlert');
                 return;
             }
             
@@ -2254,74 +2390,60 @@
             showAlert(`Uploading ${category} thumbnail...`, 'info', 'thumbnailsAlert');
             
             try {
-                // Create a reference to the file in Firebase Storage
-                const fileExtension = file.name.split('.').pop();
-                const fileName = `category-thumbnails/${category.toLowerCase()}_${Date.now()}.${fileExtension}`;
-                const storageRef = storage.ref(fileName);
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('upload_preset', 'unsigned_upload');
+                formData.append('folder', 'portfolio/thumbnails');
+                formData.append('tags', `thumbnail,${category}`);
                 
-                console.log('Starting upload to:', fileName);
+                const response = await fetch('https://api.cloudinary.com/v1_1/dnpfsfvfv/image/upload', {
+                    method: 'POST',
+                    body: formData
+                });
                 
-                // Upload the file
-                const uploadTask = storageRef.put(file);
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.message || 'Failed to upload image');
+                }
                 
-                // Monitor upload progress
-                uploadTask.on('state_changed', 
-                    (snapshot) => {
-                        // Progress monitoring (optional)
-                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        console.log(`Upload is ${Math.round(progress)}% done`);
-                    },
-                    (error) => {
-                        // Handle unsuccessful uploads
-                        console.error('Upload failed:', error);
-                        showAlert(`Failed to upload ${category} thumbnail: ${error.message}`, 'error', 'thumbnailsAlert');
-                    },
-                    async () => {
-                        try {
-                            console.log('Upload completed, getting download URL...');
-                            // Get the download URL
-                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                            console.log('File available at', downloadURL);
-                            
-                            // Update the preview
-                            const previewImg = document.getElementById(`thumbnail-${category}`);
-                            if (previewImg) {
-                                previewImg.src = downloadURL;
-                                previewImg.onerror = function() {
-                                    console.error('Error loading image:', this.src);
-                                    showAlert('Error: The image could not be displayed.', 'error', 'thumbnailsAlert');
-                                };
-                            }
-                            
-                            // Update Firestore with the new thumbnail URL
-                            console.log('Updating Firestore...');
-                            await db.collection('categories').doc(category.toLowerCase()).set({
-                                name: category,
-                                thumbnail: downloadURL,
-                                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-                            }, { merge: true });
-                            
-                            console.log('Firestore update complete');
-                            
-                            // Update local galleries.json data
-                            if (typeof updateThumbnailInData === 'function') {
-                                updateThumbnailInData(category, downloadURL);
-                            } else {
-                                console.warn('updateThumbnailInData function not found');
-                            }
-                            
-                            showAlert(`✅ ${category} thumbnail updated successfully!`, 'success', 'thumbnailsAlert');
-                            
-                        } catch (error) {
-                            console.error('Error in upload completion:', error);
-                            showAlert(`Error: ${error.message}`, 'error', 'thumbnailsAlert');
-                        }
+                const result = await response.json();
+                const imageUrl = result.secure_url;
+                
+                console.log('Upload successful:', imageUrl);
+                
+                // Update the preview
+                const previewImg = document.getElementById(`thumbnail-${category}`);
+                if (previewImg) {
+                    // Add timestamp to prevent caching
+                    previewImg.src = `${imageUrl}?t=${Date.now()}`;
+                    previewImg.onerror = function() {
+                        console.error('Error loading image:', this.src);
+                        showAlert('Error: The image could not be displayed.', 'error', 'thumbnailsAlert');
+                    };
+                }
+                
+                // Update local storage
+                const storedData = JSON.parse(localStorage.getItem('galleriesData') || '{}');
+                if (!storedData.categories) storedData.categories = {};
+                if (!storedData.categories[category]) storedData.categories[category] = { images: [] };
+                
+                storedData.categories[category].thumbnail = imageUrl;
+                localStorage.setItem('galleriesData', JSON.stringify(storedData));
+                
+                // Update the UI
+                const thumbnailCards = document.querySelectorAll('.thumbnail-card');
+                thumbnailCards.forEach(card => {
+                    if (card.querySelector('h3').textContent.includes(category)) {
+                        const img = card.querySelector('img');
+                        if (img) img.src = `${imageUrl}?t=${Date.now()}`;
                     }
-                );
+                });
+                
+                showAlert(`✅ ${category} thumbnail updated successfully!`, 'success', 'thumbnailsAlert');
                 
             } catch (error) {
-                console.error('Error during upload:', error);
-                showAlert(`Upload error: ${error.message}`, 'error', 'thumbnailsAlert');
+                console.error('Upload error:', error);
+                showAlert(`Upload failed: ${error.message}`, 'error', 'thumbnailsAlert');
             }
             
             // Reset the file input to allow re-uploading the same file

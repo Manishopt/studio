@@ -8,8 +8,7 @@
     <title>Contact Us | TJ Clicks Studio</title>
     
     <!-- Favicon -->
-    <link rel="icon" type="image/png" href="Image/favicon.png">
-    
+        
     <!-- External Libraries -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
@@ -79,6 +78,8 @@
             left: 0;
             right: 0;
             background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
             padding: 20px 50px;
             display: flex;
             justify-content: space-between;
@@ -89,10 +90,27 @@
             -webkit-backdrop-filter: none !important;
             border: none !important;
             box-shadow: none !important;
+            filter: none !important;
+            opacity: 1 !important;
         }
         
-        /* Ensure all states remain transparent */
+        /* Ensure all states remain transparent when at top */
         [data-theme="dark"] .navbar,
+        .navbar,
+        .navbar:not(.scrolled),
+        [data-theme="dark"] .navbar:not(.scrolled) {
+            background: transparent !important;
+            background-color: transparent !important;
+            background-image: none !important;
+            box-shadow: none !important;
+            border: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            filter: none !important;
+            opacity: 1 !important;
+        }
+        
+        /* Only add background when scrolled */
         .navbar.scrolled,
         [data-theme="dark"] .navbar.scrolled {
             background: transparent !important;
@@ -680,8 +698,12 @@
             .navbar {
                 padding: 15px 20px !important;
                 background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
+                filter: none !important;
+                opacity: 1 !important;
                 position: fixed !important;
                 top: 0 !important;
                 left: 0 !important;
@@ -821,8 +843,12 @@
             .navbar {
                 padding: 12px 15px !important;
                 background: transparent !important;
+                background-color: transparent !important;
+                background-image: none !important;
                 backdrop-filter: none !important;
                 -webkit-backdrop-filter: none !important;
+                filter: none !important;
+                opacity: 1 !important;
                 position: fixed !important;
                 z-index: 1000;
             }
@@ -832,25 +858,24 @@
                 margin-top: 60px;
             }
             
-            .navbar.scrolled {
-                background: rgba(0, 0, 0, 0.9) !important;
-                backdrop-filter: none !important;
-                -webkit-backdrop-filter: none !important;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            }
-            
             .hero, .contact-card, .map-card, .form-card, .social-card {
                 padding: 20px;
                 border-radius: 12px;
             }
             
+            .hero {
+                border-radius: 0 !important;
+            }
+            
             .navbar {
                 padding: 10px 15px;
                 background: transparent !important;
-            }
-            
-            .navbar.scrolled {
-                background: rgba(0, 0, 0, 0.7) !important;
+                background-color: transparent !important;
+                background-image: none !important;
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+                filter: none !important;
+                opacity: 1 !important;
             }
             
             .nav-container {
