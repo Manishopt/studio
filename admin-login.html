@@ -378,8 +378,22 @@
         loginForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            
+            // Validate that both fields are filled
+            if (!username || !password) {
+                successMessage.style.display = 'none';
+                errorMessage.style.display = 'block';
+                errorMessage.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter both username and password';
+                
+                // Shake animation
+                loginForm.style.animation = 'shake 0.5s';
+                setTimeout(() => {
+                    loginForm.style.animation = '';
+                }, 500);
+                return;
+            }
             
             // Simple authentication (in production, this should be server-side)
             // Default credentials: admin / admin123
@@ -397,6 +411,7 @@
             } else {
                 successMessage.style.display = 'none';
                 errorMessage.style.display = 'block';
+                errorMessage.innerHTML = '<i class="fas fa-exclamation-circle"></i> Invalid username or password';
                 
                 // Shake animation
                 loginForm.style.animation = 'shake 0.5s';

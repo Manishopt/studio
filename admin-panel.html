@@ -1160,6 +1160,7 @@
                     'dashboard': 'Dashboard',
                     'photos': 'Manage Photos',
                     'portfolio': 'Portfolio Items',
+                    'categoryThumbnails': 'Category Thumbnails',
                     'services': 'Manage Services',
                     'testimonials': 'Manage Testimonials',
                     'about': 'About Information',
@@ -1167,6 +1168,9 @@
                     'settings': 'Settings'
                 };
                 pageTitle.textContent = titles[sectionId] || 'Dashboard';
+                
+                // Handle section-specific navigation
+                handleSectionNavigation(sectionId);
             }
         }
 
@@ -1621,15 +1625,18 @@
                         photoItem.setAttribute('data-category', category);
                         photoItem.setAttribute('data-cloudinary-id', result.public_id);
                         
-                        // Save photo data with default values
-                        const photoData = savePhotoToLocalStorage({
+                        // Save photo data to Supabase
+                        const photoData = await savePhotoToSupabase({
                             url: result.url,
                             public_id: result.public_id,
                             category: category,
                             uploaded_at: new Date().toISOString(),
                             title: category + ' Photo',
                             description: '',
-                            isMain: false
+                            isMain: false,
+                            format: result.format,
+                            width: result.width,
+                            height: result.height
                         });
                         
                         console.log('💾 Photo data saved:', photoData);
@@ -1758,32 +1765,78 @@
             }
         }
 
-        // Save photo info to localStorage
-        function savePhotoToLocalStorage(photoData) {
-            let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-            console.log('💾 Saving photo to localStorage:', photoData);
-            console.log('💾 Current photos count before save:', photos.length);
-            
-            // Check if photo already exists (for updates)
-            const existingIndex = photos.findIndex(p => p.public_id === photoData.public_id);
-            
-            if (existingIndex >= 0) {
-                // Update existing photo
-                photos[existingIndex] = { ...photos[existingIndex], ...photoData };
-                console.log('💾 Updated existing photo at index:', existingIndex);
-            } else {
-                // Add new photo with default values
-                photoData = {
+        // Save photo info to Supabase (replaces localStorage)
+        async function savePhotoToSupabase(photoData) {
+            try {
+                console.log('💾 Saving photo to Supabase:', photoData);
+                
+                // Ensure photoData has required fields
+                const fullPhotoData = {
                     isMain: false,  // Default to not main
                     title: photoData.title || photoData.category + ' Photo',
                     description: photoData.description || '',
                     ...photoData
                 };
+                
+                // If photo already exists (has public_id), update it
+                if (photoData.public_id && typeof window.db !== 'undefined' && window.db.updatePhotoInSupabase) {
+                    // Check if photo exists first
+                    const existingPhotos = await window.db.loadPhotosFromSupabase();
+                    const existingPhoto = existingPhotos.find(p => p.public_id === photoData.public_id);
+                    
+                    if (existingPhoto) {
+                        // Update existing photo
+                        const updated = await window.db.updatePhotoInSupabase(photoData.public_id, {
+                            title: fullPhotoData.title,
+                            description: fullPhotoData.description,
+                            category: fullPhotoData.category,
+                            isMain: fullPhotoData.isMain
+                        });
+                        console.log('💾 Updated existing photo in Supabase:', updated);
+                        
+                        // Ensure only one main photo per category
+                        if (fullPhotoData.isMain) {
+                            await ensureSingleMainPhoto(fullPhotoData.category, photoData.public_id);
+                        }
+                        
+                        return { ...updated, isMain: updated.is_main || updated.isMain };
+                    }
+                }
+                
+                // Save new photo to Supabase
+                if (typeof window.db !== 'undefined' && window.db.savePhotoToSupabase) {
+                    const saved = await window.db.savePhotoToSupabase(fullPhotoData);
+                    console.log('💾 Added new photo to Supabase:', saved);
+                    
+                    // Ensure only one main photo per category
+                    if (fullPhotoData.isMain) {
+                        await ensureSingleMainPhoto(fullPhotoData.category, photoData.public_id);
+                    }
+                    
+                    return { ...saved, isMain: saved.is_main || saved.isMain };
+                } else {
+                    console.warn('⚠️ Supabase functions not available, falling back to localStorage');
+                    // Fallback to localStorage if Supabase is not available
+                    return savePhotoToLocalStorageFallback(photoData);
+                }
+            } catch (error) {
+                console.error('❌ Error saving photo to Supabase:', error);
+                // Fallback to localStorage on error
+                return savePhotoToLocalStorageFallback(photoData);
+            }
+        }
+        
+        // Fallback function for localStorage (used when Supabase is unavailable)
+        function savePhotoToLocalStorageFallback(photoData) {
+            let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const existingIndex = photos.findIndex(p => p.public_id === photoData.public_id);
+            
+            if (existingIndex >= 0) {
+                photos[existingIndex] = { ...photos[existingIndex], ...photoData };
+            } else {
                 photos.unshift(photoData);
-                console.log('💾 Added new photo, total count:', photos.length);
             }
             
-            // Ensure only one main photo per category
             if (photoData.isMain) {
                 photos = photos.map(p => ({
                     ...p,
@@ -1793,57 +1846,98 @@
             }
             
             localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
-            console.log('💾 Photos saved to localStorage successfully');
-            console.log('💾 Total photos in localStorage:', photos.length);
-            return photoData; // Return the updated/created photo data
+            return photoData;
+        }
+        
+        // Helper function to ensure only one main photo per category
+        async function ensureSingleMainPhoto(category, currentPublicId) {
+            try {
+                if (typeof window.db === 'undefined' || !window.db.loadPhotosFromSupabase) return;
+                
+                const allPhotos = await window.db.loadPhotosFromSupabase();
+                const categoryPhotos = allPhotos.filter(p => p.category === category && p.public_id !== currentPublicId);
+                
+                // Unset main flag for other photos in the same category
+                for (const photo of categoryPhotos) {
+                    if (photo.isMain || photo.is_main) {
+                        await window.db.updatePhotoInSupabase(photo.public_id, { isMain: false });
+                    }
+                }
+            } catch (error) {
+                console.error('Error ensuring single main photo:', error);
+            }
         }
 
-        // Load photos from localStorage on page load
-        function loadPhotosFromLocalStorage() {
-            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-            const photoGrid = document.getElementById('photoGrid');
-            
-            const categoryColors = {
-                'Wedding': '#e74c3c',
-                'Maternity': '#f39c12',
-                'Portrait': '#9b59b6',
-                'Commercial': '#3498db',
-                'PreWedding': '#1abc9c',
-                'Newborn': '#e91e63'
-            };
-            
-            photos.forEach(photo => {
-                const photoItem = document.createElement('div');
-                photoItem.className = 'photo-item';
-                photoItem.setAttribute('data-category', photo.category);
-                photoItem.setAttribute('data-cloudinary-id', photo.public_id);
+        // Load photos from Supabase (replaces localStorage)
+        async function loadPhotosFromSupabase() {
+            try {
+                const photoGrid = document.getElementById('photoGrid');
+                if (!photoGrid) return;
                 
-                photoItem.innerHTML = `
-                    <img src="${photo.url}" alt="${photo.title || photo.category + ' Photo'}" loading="lazy">
-                    <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
-                        ${photo.category} ${photo.isMain ? '★' : ''}
-                    </div>
-                    <div class="photo-actions">
-                        <button class="btn-edit" onclick="editPhoto(this)" data-id="${photo.public_id}">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn-set-main ${photo.isMain ? 'active' : ''}" onclick="setAsMainPhoto('${photo.public_id}')" title="${photo.isMain ? 'Main Photo' : 'Set as main photo'}">
-                            <i class="fas fa-star"></i>
-                        </button>
-                        <button class="btn-delete" onclick="deletePhoto(this)">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                    <div class="photo-info" style="display: none;">
-                        <h4>${photo.title || photo.category + ' Photo'}</h4>
-                        <p>${photo.description || 'No description'}</p>
-                    </div>
-                `;
+                let photos = [];
                 
-                photoGrid.appendChild(photoItem);
-            });
-            
-            updatePhotoCount();
+                // Try to load from Supabase first
+                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
+                    photos = await window.db.loadPhotosFromSupabase();
+                    console.log('✅ Loaded photos from Supabase:', photos.length);
+                } else {
+                    console.warn('⚠️ Supabase functions not available, falling back to localStorage');
+                    // Fallback to localStorage
+                    photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                }
+                
+                const categoryColors = {
+                    'Wedding': '#e74c3c',
+                    'Maternity': '#f39c12',
+                    'Portrait': '#9b59b6',
+                    'Commercial': '#3498db',
+                    'PreWedding': '#1abc9c',
+                    'Newborn': '#e91e63'
+                };
+                
+                // Clear existing photos
+                photoGrid.innerHTML = '';
+                
+                photos.forEach(photo => {
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'photo-item';
+                    photoItem.setAttribute('data-category', photo.category);
+                    photoItem.setAttribute('data-cloudinary-id', photo.public_id);
+                    
+                    const isMain = photo.isMain || photo.is_main || false;
+                    
+                    photoItem.innerHTML = `
+                        <img src="${photo.url}" alt="${photo.title || photo.category + ' Photo'}" loading="lazy">
+                        <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
+                            ${photo.category} ${isMain ? '★' : ''}
+                        </div>
+                        <div class="photo-actions">
+                            <button class="btn-edit" onclick="editPhoto(this)" data-id="${photo.public_id}">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn-set-main ${isMain ? 'active' : ''}" onclick="setAsMainPhoto('${photo.public_id}')" title="${isMain ? 'Main Photo' : 'Set as main photo'}">
+                                <i class="fas fa-star"></i>
+                            </button>
+                            <button class="btn-delete" onclick="deletePhoto(this)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        <div class="photo-info" style="display: none;">
+                            <h4>${photo.title || photo.category + ' Photo'}</h4>
+                            <p>${photo.description || 'No description'}</p>
+                        </div>
+                    `;
+                    
+                    photoGrid.appendChild(photoItem);
+                });
+                
+                updatePhotoCount();
+            } catch (error) {
+                console.error('❌ Error loading photos:', error);
+                // Fallback to localStorage on error
+                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                console.log('📦 Loaded photos from localStorage fallback:', photos.length);
+            }
         }
 
         // Filter Photos by Category
@@ -1869,20 +1963,34 @@
             document.getElementById('totalCount').textContent = visibleCount;
         }
 
-        // Delete Photo Function
-        function deletePhoto(btn) {
+        // Delete Photo Function (updated to use Supabase)
+        async function deletePhoto(btn) {
             if (confirm('Are you sure you want to delete this photo?')) {
                 const photoItem = btn.closest('.photo-item');
                 const cloudinaryId = photoItem.getAttribute('data-cloudinary-id');
                 
-                // Remove from DOM
+                // Remove from DOM immediately for better UX
                 photoItem.remove();
                 
-                // Remove from localStorage
+                // Delete from Supabase
                 if (cloudinaryId) {
-                    let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                    photos = photos.filter(photo => photo.public_id !== cloudinaryId);
-                    localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                    try {
+                        if (typeof window.db !== 'undefined' && window.db.deletePhotoFromSupabase) {
+                            await window.db.deletePhotoFromSupabase(cloudinaryId);
+                            console.log('✅ Photo deleted from Supabase:', cloudinaryId);
+                        } else {
+                            // Fallback to localStorage
+                            let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                            photos = photos.filter(photo => photo.public_id !== cloudinaryId);
+                            localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                        }
+                    } catch (error) {
+                        console.error('❌ Error deleting photo from Supabase:', error);
+                        // Fallback to localStorage on error
+                        let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                        photos = photos.filter(photo => photo.public_id !== cloudinaryId);
+                        localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                    }
                 }
                 
                 updatePhotoCount();
@@ -1903,12 +2011,27 @@
             document.getElementById('totalCount').textContent = totalPhotos;
         }
 
-        // Edit Photo Function
-        function editPhoto(btn) {
+        // Edit Photo Function (updated to use Supabase)
+        async function editPhoto(btn) {
             const photoItem = btn.closest('.photo-item');
             const photoId = btn.getAttribute('data-id');
-            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-            const photo = photos.find(p => p.public_id === photoId);
+            
+            // Load photo from Supabase or localStorage fallback
+            let photo = null;
+            try {
+                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
+                    const photos = await window.db.loadPhotosFromSupabase();
+                    photo = photos.find(p => p.public_id === photoId);
+                }
+            } catch (error) {
+                console.error('Error loading photo from Supabase:', error);
+            }
+            
+            // Fallback to localStorage if Supabase fails or photo not found
+            if (!photo) {
+                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                photo = photos.find(p => p.public_id === photoId);
+            }
             
             if (!photo) return;
             
@@ -1964,7 +2087,7 @@
             photoItem.appendChild(form);
             
             // Handle form submission
-            form.querySelector('#savePhotoChanges').addEventListener('click', () => {
+            form.querySelector('#savePhotoChanges').addEventListener('click', async () => {
                 const updatedPhoto = {
                     ...photo,
                     title: document.getElementById('editPhotoTitle').value.trim(),
@@ -1972,13 +2095,13 @@
                     description: document.getElementById('editPhotoDescription').value.trim()
                 };
                 
-                // Save changes
-                savePhotoToLocalStorage(updatedPhoto);
+                // Save changes to Supabase
+                await savePhotoToSupabase(updatedPhoto);
                 
                 // Reload photos to reflect changes
                 const photoGrid = document.getElementById('photoGrid');
                 photoGrid.innerHTML = '';
-                loadPhotosFromLocalStorage();
+                await loadPhotosFromSupabase();
             });
             
             // Handle cancel
@@ -1987,50 +2110,103 @@
             });
         }
         
-        // Set as Main Photo Function
-        function setAsMainPhoto(photoId) {
-            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-            const photo = photos.find(p => p.public_id === photoId);
-            
-            if (photo) {
-                // Update photo data
-                photo.isMain = true;
-                savePhotoToLocalStorage(photo);
+        // Set as Main Photo Function (updated to use Supabase)
+        async function setAsMainPhoto(photoId) {
+            try {
+                // Load photo from Supabase or localStorage fallback
+                let photo = null;
+                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
+                    const photos = await window.db.loadPhotosFromSupabase();
+                    photo = photos.find(p => p.public_id === photoId);
+                }
                 
-                // Update UI
-                document.querySelectorAll('.photo-item').forEach(item => {
-                    const itemId = item.querySelector('.btn-edit')?.getAttribute('data-id');
-                    const starBtn = item.querySelector('.btn-set-main');
-                    const badge = item.querySelector('.photo-category-badge');
+                // Fallback to localStorage
+                if (!photo) {
+                    const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                    photo = photos.find(p => p.public_id === photoId);
+                }
+                
+                if (photo) {
+                    // Update photo data
+                    photo.isMain = true;
+                    await savePhotoToSupabase(photo);
                     
-                    if (itemId === photoId) {
-                        starBtn.classList.add('active');
-                        starBtn.title = 'Main Photo';
-                        if (badge) {
-                            badge.innerHTML = `${photo.category} ★`;
-                        }
-                    } else if (itemId && badge && item.getAttribute('data-category') === photo.category) {
-                        starBtn.classList.remove('active');
-                        starBtn.title = 'Set as main photo';
-                        if (badge) {
-                            badge.textContent = photo.category;
-                        }
+                    // Reload photos to reflect changes
+                    const photoGrid = document.getElementById('photoGrid');
+                    photoGrid.innerHTML = '';
+                    await loadPhotosFromSupabase();
+                    
+                    // Show success message
+                    const alert = document.getElementById('photoAlert');
+                    if (alert) {
+                        alert.textContent = '✅ Main photo updated successfully!';
+                        alert.style.display = 'block';
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 3000);
                     }
-                });
-                
-                // Show success message
-                const alert = document.getElementById('photoAlert');
-                alert.textContent = '✅ Main photo updated successfully!';
-                alert.style.display = 'block';
-                setTimeout(() => {
-                    alert.style.display = 'none';
-                }, 3000);
+                }
+            } catch (error) {
+                console.error('Error setting main photo:', error);
+                // Fallback to localStorage
+                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                const photo = photos.find(p => p.public_id === photoId);
+                if (photo) {
+                    photo.isMain = true;
+                    savePhotoToLocalStorageFallback(photo);
+                    
+                    // Update UI
+                    document.querySelectorAll('.photo-item').forEach(item => {
+                        const itemId = item.querySelector('.btn-edit')?.getAttribute('data-id');
+                        const starBtn = item.querySelector('.btn-set-main');
+                        const badge = item.querySelector('.photo-category-badge');
+                        
+                        if (itemId === photoId) {
+                            starBtn.classList.add('active');
+                            starBtn.title = 'Main Photo';
+                            if (badge) {
+                                badge.innerHTML = `${photo.category} ★`;
+                            }
+                        } else if (itemId && badge && item.getAttribute('data-category') === photo.category) {
+                            starBtn.classList.remove('active');
+                            starBtn.title = 'Set as main photo';
+                            if (badge) {
+                                badge.textContent = photo.category;
+                            }
+                        }
+                    });
+                    
+                    // Show success message
+                    const alert = document.getElementById('photoAlert');
+                    if (alert) {
+                        alert.textContent = '✅ Main photo updated successfully!';
+                        alert.style.display = 'block';
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 3000);
+                    }
+                }
             }
         }
         
-        // Load and display portfolio photos
-        function loadPortfolioPhotos() {
-            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+        // Load and display portfolio photos (updated to use Supabase)
+        async function loadPortfolioPhotos() {
+            let photos = [];
+            
+            // Try to load from Supabase first
+            try {
+                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
+                    photos = await window.db.loadPhotosFromSupabase();
+                } else {
+                    // Fallback to localStorage
+                    photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                }
+            } catch (error) {
+                console.error('Error loading photos:', error);
+                // Fallback to localStorage
+                photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            }
+            
             const featuredGrid = document.getElementById('featuredGrid');
             const portfolioGrid = document.getElementById('portfolioGrid');
             
@@ -2050,7 +2226,7 @@
             let featuredCount = 0;
             
             // Show featured photos (main photos)
-            photos.filter(photo => photo.isMain).forEach(photo => {
+            photos.filter(photo => photo.isMain || photo.is_main).forEach(photo => {
                 featuredCount++;
                 const featuredItem = document.createElement('div');
                 featuredItem.className = 'portfolio-featured-item';
@@ -2092,13 +2268,13 @@
                     <div style="position: relative; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                         <img src="${photo.url}" alt="${photo.title}" style="width: 100%; height: 150px; object-fit: cover; display: block;">
                         <div style="position: absolute; top: 5px; left: 5px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">
-                            ${photo.category} ${photo.isMain ? '★' : ''}
+                            ${photo.category} ${(photo.isMain || photo.is_main) ? '★' : ''}
                         </div>
                         <div style="padding: 10px; background: white;">
                             <h4 style="margin: 0 0 5px; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${photo.title}</h4>
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <span style="font-size: 0.8rem; color: #666;">${new Date(photo.uploaded_at).toLocaleDateString()}</span>
-                                <button class="btn-set-main ${photo.isMain ? 'active' : ''}" onclick="event.stopPropagation(); setAsMainPhoto('${photo.public_id}')" title="${photo.isMain ? 'Main Photo' : 'Set as main'}" style="background: none; border: none; cursor: pointer; color: ${photo.isMain ? '#ffd700' : '#ddd'}; padding: 2px 5px;">
+                                <button class="btn-set-main ${(photo.isMain || photo.is_main) ? 'active' : ''}" onclick="event.stopPropagation(); setAsMainPhoto('${photo.public_id}')" title="${(photo.isMain || photo.is_main) ? 'Main Photo' : 'Set as main'}" style="background: none; border: none; cursor: pointer; color: ${(photo.isMain || photo.is_main) ? '#ffd700' : '#ddd'}; padding: 2px 5px;">
                                     <i class="fas fa-star"></i>
                                 </button>
                             </div>
@@ -2471,21 +2647,50 @@
         }
 
         // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Load category thumbnails
-            loadCategoryThumbnails();
-            // Load photos from localStorage
-            loadPhotosFromLocalStorage();
-            updatePhotoCount();
-            loadPortfolioPhotos(); // Load portfolio items
-            
-            // Load testimonials from Firebase
-            loadTestimonialsFromFirebase();
-            
-            console.log('✅ Admin panel initialized');
-            console.log('✅ Firebase ready for: Testimonials, About, Contact');
-            console.log('✅ Supabase ready for: Photos, Thumbnails');
-            console.log('✅ Cloudinary ready for: Image uploads');
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                // Initialize Firebase if available
+                if (typeof firebase !== 'undefined') {
+                    console.log('Firebase is available');
+                    
+                    // Initialize Firebase using the function from firebase-db.js
+                    if (typeof initializeFirebase === 'function') {
+                        initializeFirebase();
+                    }
+                    
+                    // Get Firebase services
+                    if (typeof firebase.storage !== 'undefined') {
+                        window.firebaseStorage = firebase.storage();
+                    }
+                    if (typeof firebase.firestore !== 'undefined') {
+                        window.firebaseDB = firebase.firestore();
+                    }
+                    
+                    console.log('Firebase services initialized');
+                }
+                
+                // Load category thumbnails
+                loadCategoryThumbnails();
+                
+                // Load photos from Supabase
+                await loadPhotosFromSupabase();
+                updatePhotoCount();
+                
+                // Load portfolio items
+                await loadPortfolioPhotos();
+                
+                // Load testimonials from Firebase
+                if (typeof loadTestimonialsFromFirebase === 'function') {
+                    loadTestimonialsFromFirebase();
+                }
+                
+                console.log('✅ Admin panel initialized');
+                console.log('✅ Firebase ready for: Testimonials, About, Contact');
+                console.log('✅ Supabase ready for: Photos, Thumbnails');
+                console.log('✅ Cloudinary ready for: Image uploads');
+            } catch (error) {
+                console.error('Error initializing admin panel:', error);
+            }
         });
     </script>
     
@@ -2500,111 +2705,10 @@
     <!-- Firebase Database Helper (for other features) -->
     <script src="firebase-db.js"></script>
     
-    <!-- Initialize Firebase and load data -->
+    <!-- Additional helper functions -->
     <script>
-        // Global Firebase services
-        let storage, db;
-        
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                // Initialize Firebase
-                if (typeof firebase !== 'undefined') {
-                    console.log('Firebase is available');
-                    
-                    // Initialize Firebase using the function from firebase-db.js
-                    if (typeof initializeFirebase === 'function') {
-                        initializeFirebase();
-                    }
-                    
-                    // Get Firebase services
-                    storage = firebase.storage();
-                    db = firebase.firestore();
-                    
-                    console.log('Firebase services initialized');
-                    
-                    // Set up section navigation
-                    setupNavigation();
-                    
-                    // Load initial data
-                    await loadInitialData();
-                    
-                    // Show the first section by default
-                    showSection('dashboard');
-                } else {
-                    console.error('Firebase is not loaded');
-                    showAlert('Error: Firebase not loaded. Please check your internet connection.', 'error');
-                }
-            } catch (error) {
-                console.error('Error initializing app:', error);
-                showAlert('Error initializing the application. Please try again.', 'error');
-            }
-        });
-        
-        function setupNavigation() {
-            // Set up section navigation
-            const menuLinks = document.querySelectorAll('.menu-link');
-            menuLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const sectionId = this.getAttribute('data-section');
-                    showSection(sectionId);
-                });
-            });
-            
-            // Set up any other button event listeners here
-            document.addEventListener('click', function(e) {
-                // Handle button clicks
-                if (e.target.closest('.btn-upload')) {
-                    const fileInput = e.target.closest('.btn-upload').querySelector('input[type="file"]');
-                    if (fileInput) fileInput.click();
-                }
-            });
-        }
-        
-        async function loadInitialData() {
-            try {
-                // Load categories when the page loads
-                if (typeof loadCategoryThumbnails === 'function') {
-                    await loadCategoryThumbnails();
-                } else {
-                    console.error('loadCategoryThumbnails function not found');
-                }
-                
-                // Add any other initial data loading here
-                
-            } catch (error) {
-                console.error('Error loading initial data:', error);
-                throw error;
-            }
-        }
-        
-        // Function to show a specific section
-        function showSection(sectionId) {
-            console.log('Showing section:', sectionId);
-            
-            // Hide all sections
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.style.display = 'none';
-            });
-            
-            // Remove active class from all menu items
-            document.querySelectorAll('.menu-link').forEach(link => {
-                link.classList.remove('active');
-            });
-            
-            // Show the selected section
-            const section = document.getElementById(sectionId);
-            if (section) {
-                section.style.display = 'block';
-                // Add active class to the clicked menu item
-                const activeLink = document.querySelector(`.menu-link[data-section="${sectionId}"]`);
-                if (activeLink) {
-                    activeLink.classList.add('active');
-                }
-            } else {
-                console.warn(`Section with ID '${sectionId}' not found`);
-            }
-            
+        // Special handling for specific sections when navigating
+        function handleSectionNavigation(sectionId) {
             // Special handling for specific sections
             if (sectionId === 'categoryThumbnails') {
                 // Refresh thumbnails when navigating to this section
@@ -2612,24 +2716,17 @@
                     loadCategoryThumbnails();
                 }
             }
-        }
-        
-        // Global function to show alerts
-        function showAlert(message, type = 'info', containerId = 'mainAlert') {
-            const alertDiv = document.getElementById(containerId) || document.createElement('div');
-            alertDiv.textContent = message;
-            alertDiv.className = `alert alert-${type}`;
-            alertDiv.style.display = 'block';
-            
-            // Auto-hide after 5 seconds
-            setTimeout(() => {
-                alertDiv.style.display = 'none';
-            }, 5000);
-            
-            // If it's a new alert, add it to the body
-            if (!document.getElementById(containerId)) {
-                alertDiv.id = containerId;
-                document.body.appendChild(alertDiv);
+            if (sectionId === 'photos') {
+                // Refresh photos when navigating to this section
+                if (typeof loadPhotosFromSupabase === 'function') {
+                    loadPhotosFromSupabase();
+                }
+            }
+            if (sectionId === 'portfolio') {
+                // Refresh portfolio when navigating to this section
+                if (typeof loadPortfolioPhotos === 'function') {
+                    loadPortfolioPhotos();
+                }
             }
         }
     </script>
