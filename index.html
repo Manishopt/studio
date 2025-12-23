@@ -1575,7 +1575,7 @@
             <h2 id="galleryTitle" class="modal-title">Gallery</h2>
             <div class="gallery-grid"></div>
             <div style="text-align:center;margin-top:12px;">
-                <a id="openFullGallery" href="#" style="color:var(--accent-color);font-weight:600;">Open full gallery</a>
+                <a id="openFullGallery" href="#" style="color:var(--accent-color);font-weight:600;" onclick="event.preventDefault(); window.location.href=this.getAttribute('data-href') || 'gallery.html';">Open full gallery</a>
             </div>
         </div>
     </div>
@@ -1891,7 +1891,7 @@
                 
                 const fullGalleryLink = document.getElementById('openFullGallery');
                 if (fullGalleryLink) {
-                    fullGalleryLink.href = `gallery.html?category=${encodeURIComponent(category)}`;
+                    fullGalleryLink.setAttribute('data-href', `gallery.html?category=${encodeURIComponent(category)}`);
                 }
                 
                 grid.innerHTML = '';
