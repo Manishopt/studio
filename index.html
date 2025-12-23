@@ -823,22 +823,27 @@
         /* ===== FOOTER ===== */
         footer {
             text-align: center;
-            padding: 40px 20px;
+            padding: 20px 16px;
             background: var(--dark-bg);
             color: var(--text-light);
-            margin-top: 60px;
+            margin-top: 30px;
+        }
+
+        footer h2 {
+            margin: 0 0 10px;
+            font-size: 1.1rem;
         }
 
         footer p {
-            margin-bottom: 20px;
-            font-size: 1rem;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
         }
 
         footer a {
             color: var(--text-light);
             text-decoration: none;
             margin: 0 15px;
-            font-size: 1.1rem;
+            font-size: 1rem;
             transition: var(--transition);
         }
 
@@ -947,14 +952,6 @@
             bottom: 90px;
             background: var(--dark-bg);
             color: var(--text-light);
-        }
-
-        #toggle-sound {
-            bottom: 160px;
-            background: var(--dark-bg);
-            color: var(--text-light);
-            border: none;
-            cursor: pointer;
         }
 
         /* ===== ANIMATIONS ===== */
@@ -1267,10 +1264,6 @@
                 bottom: 75px;
             }
 
-            #toggle-sound {
-                bottom: 135px;
-            }
-
             .cursor-dot,
             .cursor-outline {
                 display: none;
@@ -1533,7 +1526,7 @@
         <div class="nav-links" id="navLinks">
             <a href="#portfolio">Portfolio</a>
             <a href="#services">Services</a>
-            <a href="#about">About</a>
+            <a href="about.html">About</a>
             <a href="contact.html">Contact</a>
             <button class="theme-toggle nav-theme-toggle" id="theme-toggle" aria-label="Toggle theme">
                 <i class="fas fa-moon"></i>
@@ -1590,71 +1583,8 @@
          </ul>
      </section>
  
-    <!-- Testimonials -->
-    <section>
-        <h2>Client Testimonials</h2>
-        <blockquote>
-            "Tejender was amazing! She made us feel so comfortable and the photos turned out better than we ever imagined." — <strong>Shobit & Kavita</strong>
-        </blockquote>
-        <blockquote>
-            "Absolutely blown away by the photos! You didn't just take pictures—you captured memories. Every shot tells a story, and I'll treasure them forever. Professional, creative, and easy to work with. Highly recommend!" — <strong>Jay</strong>
-        </blockquote>
-        <blockquote>
-            "I've worked with several photographers before, but this was on another level. From the first consultation to the final edits, the entire experience was seamless. The results? Breathtaking." — <strong>Rahul Jain</strong>
-        </blockquote>
-        <blockquote>
-            "We cried happy tears looking at our wedding gallery. You caught every detail, every emotion, and every special moment. Thank you for preserving the magic of our day so beautifully." — <strong>Emily & Vicky</strong>
-        </blockquote>
-        <blockquote>
-            "Not only were the photos stunning, but you made us feel so relaxed and natural the whole time. We couldn't have asked for a better photographer on our big day!" — <strong>Ronit & Suhani</strong>
-        </blockquote>
-    </section>
+    
 
-    <!-- About -->
-    <section id="about">
-        <h2>About Me</h2>
-        <p>Hi! I'm <strong>Tejender Kaur</strong>, a freelance photographer based in Jaipur, Rajasthan. I'm a passionate photographer dedicated to capturing genuine moments and turning them into timeless memories. Whether it's a wedding, family session, or branding shoot, I believe every story is unique—and my goal is to tell yours through authentic, beautifully crafted images.</p>
-        
-        <p>With a relaxed approach and a keen eye for detail, I strive to make every session comfortable, fun, and unforgettable. I specialize in landscape, portrait, and street photography. My goal is to capture the world in its most authentic form.</p>
-
-        <ul class="about-list">
-            <li><strong>Poetic & Personal:</strong><br>"I don't just take photos — I capture feelings, freeze moments, and turn fleeting seconds into timeless stories."</li>
-            <li><strong>Emotionally Expressive:</strong><br>"Every photograph I take is a piece of my soul. I believe the best shots are not posed, but felt."</li>
-            <li><strong>Passion-Focused:</strong><br>"Photography is not my job, it's my language. Through my lens, I speak of love, light, and life."</li>
-            <li><strong>Authenticity-Centered:</strong><br>"I chase real moments — not perfection. Raw smiles, soft light, and unspoken stories are what I live to capture."</li>
-            <li><strong>Elegant & Professional:</strong><br>"With every click, I aim to create art that speaks, that lives, and that remembers. My work is where emotion meets light."</li>
-            <li><strong>Minimal & Bold:</strong><br>"Moments fade. Memories blur. Photographs don't."</li>
-            <li><strong>From a Storyteller's POV:</strong><br>"I tell stories — not with words, but with light, color, and the silence between two glances."</li>
-        </ul>
-    </section>
-
-    <!-- Blog -->
-    <section class="blog-section">
-        <h2>Photography Blog</h2>
-        <article class="blog-post">
-            <h3>The Magic of Golden Hour</h3>
-            <p>Golden hour light creates the most flattering tones and shadows. Here's how to make the most of it...</p>
-        </article>
-        <article class="blog-post">
-            <h3>Choosing the Right Lens</h3>
-            <p>Wide-angle or prime? Here's a quick guide to lenses for beginners and pros alike.</p>
-        </article>
-    </section>
-
-    <!-- Music Player -->
-    <section id="music-player">
-        <h2>Music Vibes While You Scroll</h2>
-        <div class="music-container">
-            <img src="https://picsum.photos/id/24/200/200" alt="Album Cover" class="album-cover" onerror="this.onerror=null; this.src='https://via.placeholder.com/200?text=No+Image'">
-            <audio id="audio-player" src=""></audio>
-            
-            <div class="controls">
-                <button onclick="rewindMusic()" aria-label="Rewind"><i class="fas fa-backward"></i></button>
-                <button onclick="togglePlayPause()" id="playPauseBtn" aria-label="Play/Pause"><i class="fas fa-play"></i></button>
-                <button onclick="forwardMusic()" aria-label="Forward"><i class="fas fa-forward"></i></button>
-            </div>
-        </div>
-    </section>
 
     <!-- Contact Section -->
     <section id="contact" style="text-align: center; padding: 60px 20px;">
@@ -1662,6 +1592,12 @@
         <p style="margin-bottom: 30px;">Ready to capture your special moments? Click below to get in touch with us.</p>
         <a href="contact.html" class="btn btn-primary" style="font-size: 1.2rem; padding: 15px 40px; border-radius: 30px;">
             <i class="fas fa-envelope"></i> Contact Us
+        </a>
+    </section>
+
+    <section style="text-align: center; padding: 10px 20px 40px;">
+        <a href="about.html" class="btn btn-primary" style="font-size: 1.1rem; padding: 12px 34px; border-radius: 30px;">
+            About Us
         </a>
     </section>
 
@@ -1681,7 +1617,7 @@
                 <i class="fab fa-whatsapp"></i> WhatsApp
             </a>
         </div>
-        <p>&copy; 2025 TJ Clicks Photography | TJ Clicks Studio. All rights reserved.</p>
+        <p style="margin-top: 15px;">&copy; 2025 TJ Clicks Photography | TJ Clicks Studio. All rights reserved.</p>
     </footer>
 
     <!-- Floating Buttons -->
@@ -1691,9 +1627,6 @@
     <a href="#" class="floating-btn" id="scroll-top-btn" aria-label="Scroll to top">
         <i class="fas fa-arrow-up"></i>
     </a>
-    <button class="floating-btn" id="toggle-sound" aria-label="Toggle video sound">
-        <i class="fas fa-volume-mute"></i>
-    </button>
 
     <!-- External Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
@@ -2142,19 +2075,6 @@
                 }
             });
         });
-
-        // Background Video Sound Toggle
-        const video = document.getElementById("bg-video");
-        const toggleBtn = document.getElementById("toggle-sound");
-
-        if (video && toggleBtn) {
-            toggleBtn.addEventListener("click", function() {
-                video.muted = !video.muted;
-                toggleBtn.innerHTML = video.muted ? 
-                    '<i class="fas fa-volume-mute"></i>' : 
-                    '<i class="fas fa-volume-up"></i>';
-            });
-        }
 
         // Scroll to top button
         const scrollTopBtn = document.getElementById("scroll-top-btn");
