@@ -2294,7 +2294,7 @@
             
             // Try to load from Supabase first
             try {
-                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio_photos?select=*', {
+                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
                     headers: {
                         'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDM0OTUwODcsImV4cCI6MjAxOTA3MTA4N30.0YH4HnaKUGD8aTcW2D5uEeJZ5X8Q6VQ5Q9X0ZJZvJk',
                         'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDM0OTUwODcsImV4cCI6MjAxOTA3MTA4N30.0YH4HnaKUGD8aTcW2D5uEeJZ5X8Q6VQ5Q9X0ZJZvJk'
@@ -2304,7 +2304,7 @@
                 if (response.ok) {
                     photos = await response.json();
                 } else {
-                    throw new Error('Supabase table not found');
+                    throw new Error('Portfolio table not found');
                 }
             } catch (error) {
                 console.warn('Supabase error, using localStorage:', error);
