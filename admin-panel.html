@@ -2288,21 +2288,24 @@
             }
         }
         
-        // Load and display portfolio photos (updated to use Supabase)
+        // Load and display portfolio photos (updated to use localStorage first)
         async function loadPortfolioPhotos() {
             let photos = [];
             
-            // Try localStorage first (has existing data)
+            // Load from localStorage first (shows immediately)
             try {
                 photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
                 console.log('Loaded photos from localStorage:', photos.length);
                 
-                // Also try to load from Supabase and merge if available
+                // Display localStorage photos immediately
+                displayPortfolioPhotos(photos);
+                
+                // Then try to load from Supabase and merge if available
                 try {
                     const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
                         headers: {
-                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDM0OTUwODcsImV4cCI6MjAxOTA3MTA4N30.0YH4HnaKUGD8aTcW2D5uEeJZ5X8Q6VQ5Q9X0ZJZvJk',
-                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDM0OTUwODcsImV4cCI6MjAxOTA3MTA4N30.0YH4HnaKUGD8aTcW2D5uEeJZ5X8Q6VQ5Q9X0ZJZvJk'
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
                         }
                     });
                     
@@ -2310,14 +2313,16 @@
                         const supabasePhotos = await response.json();
                         console.log('Loaded photos from Supabase:', supabasePhotos.length);
                         
-                        // Merge Supabase photos with localStorage (prioritize localStorage)
+                        // Merge Supabase photos with localStorage (avoid duplicates)
                         const mergedPhotos = [...photos];
                         supabasePhotos.forEach(supabasePhoto => {
                             if (!mergedPhotos.find(p => p.public_id === supabasePhoto.public_id)) {
                                 mergedPhotos.push(supabasePhoto);
                             }
                         });
-                        photos = mergedPhotos;
+                        
+                        // Update display with merged photos
+                        displayPortfolioPhotos(mergedPhotos);
                     }
                 } catch (supabaseError) {
                     console.warn('Supabase not available, using localStorage only:', supabaseError);
@@ -2325,8 +2330,12 @@
             } catch (error) {
                 console.error('Error loading photos:', error);
                 photos = [];
+                displayPortfolioPhotos([]);
             }
-            
+        }
+        
+        // Separate function to display portfolio photos
+        function displayPortfolioPhotos(photos) {
             const featuredGrid = document.getElementById('featuredGrid');
             const portfolioGrid = document.getElementById('portfolioGrid');
             
