@@ -1799,12 +1799,17 @@
             uploadButton.innerHTML = '<i class="fas fa-upload"></i> Upload Photos';
             uploadButton.style.display = 'none';
             
-            // Update photo count
+            // Update photo count and reload photos
+            await loadPhotosFromSupabase();
             updatePhotoCount();
             
+            // Hide success message after delay
             setTimeout(() => {
                 photoAlert.style.display = 'none';
             }, 4000);
+            
+            // Show success message
+            showAlert(`${successCount} photo(s) uploaded successfully!`, 'success', 'photoAlert');
         }
 
         // Upload single file to Cloudinary
@@ -1975,12 +1980,25 @@
                 
                 let photos = [];
                 
-                // Try to load from Supabase first
-                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
-                    photos = await window.db.loadPhotosFromSupabase();
-                    console.log('✅ Loaded photos from Supabase:', photos.length);
-                } else {
-                    console.warn('⚠️ Supabase functions not available, falling back to localStorage');
+                // Try to load from Supabase directly
+                try {
+                    const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        photos = await response.json();
+                        console.log('✅ Loaded photos from Supabase:', photos.length);
+                        // Also update localStorage for offline fallback
+                        localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                    } else {
+                        throw new Error('Failed to load photos from Supabase');
+                    }
+                } catch (error) {
+                    console.warn('⚠️ Error loading from Supabase, falling back to localStorage:', error);
                     // Fallback to localStorage
                     photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
                 }
