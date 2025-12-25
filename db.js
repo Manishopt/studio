@@ -4,6 +4,43 @@
 const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
 
+
+
+/**
+ * Saves a background photo to Supabase
+ * @param {Object} photoData - Photo data object with url, title, description, etc.
+ * @returns {Promise<Object>} The saved background photo data
+ */
+async function saveBackgroundPhoto(photoData) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/background_photos`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                url: photoData.url,
+                title: photoData.title || 'Background Photo',
+                description: photoData.description || '',
+                created_at: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error saving background photo to Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error in saveBackgroundPhoto:', error);
+        throw error;
+    }
+}
+
 /**
  * Saves an image URL to the Supabase database
  * @param {string} url - The Cloudinary secure URL of the uploaded image
@@ -201,7 +238,9 @@ if (typeof module !== 'undefined' && module.exports) {
         savePhotoToSupabase, 
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
-        loadPhotosFromSupabase 
+        loadPhotosFromSupabase,
+        saveBackgroundPhoto,
+        loadBackgroundPhotos
     };
 }
 // For browser environment
@@ -211,6 +250,8 @@ if (typeof window !== 'undefined') {
         savePhotoToSupabase, 
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
-        loadPhotosFromSupabase 
+        loadPhotosFromSupabase,
+        saveBackgroundPhoto,
+        loadBackgroundPhotos
     };
 }

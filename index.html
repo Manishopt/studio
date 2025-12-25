@@ -172,6 +172,42 @@
             z-index: -1;
         }
 
+        /* ===== BACKGROUND PHOTO CAROUSEL ===== */
+        #bg-carousel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            overflow: hidden;
+        }
+
+        .bg-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .bg-slide.active {
+            opacity: 1;
+        }
+
+        #carousel-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
         /* ===== CUSTOM CURSOR ===== */
         .cursor-dot,
         .cursor-outline {
@@ -287,10 +323,7 @@
 
         /* ===== HERO SECTION ===== */
         header {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
+            background: transparent;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -302,7 +335,7 @@
         }
         
         [data-theme="dark"] header {
-            background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('Image/WHITE.jpg');
+            background: transparent;
         }
 
         header h1 {
@@ -1552,6 +1585,12 @@
         </div>
     </nav>
 
+    <!-- Background Photo Carousel -->
+    <div id="bg-carousel">
+        <!-- Background slides will be dynamically loaded here -->
+    </div>
+    <div id="carousel-overlay"></div>
+
     <!-- Hero Section -->
     <header>
         <h1>TJ Clicks Studio</h1>
@@ -1662,6 +1701,124 @@
 
     <!-- Custom Scripts -->
     <script>
+// Background Photo Carousel
+let currentSlide = 0;
+let backgroundPhotos = [];
+let carouselInterval;
+
+async function loadBackgroundPhotos() {
+    try {
+        const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/background_photos?order=created_at.desc', {
+            method: 'GET',
+            headers: {
+                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (response.ok) {
+            backgroundPhotos = await response.json();
+            if (backgroundPhotos.length > 0) {
+                initCarousel();
+            } else {
+                useDefaultBackgrounds();
+            }
+        } else {
+            useDefaultBackgrounds();
+        }
+    } catch (error) {
+        console.error('Error loading background photos:', error);
+        useDefaultBackgrounds();
+    }
+}
+
+function initCarousel() {
+    const carousel = document.getElementById('bg-carousel');
+    if (!carousel) return;
+    
+    carousel.innerHTML = '';
+    
+    if (backgroundPhotos.length === 0) {
+        useDefaultBackgrounds();
+        return;
+    }
+    
+    backgroundPhotos.forEach((photo, index) => {
+        const slide = document.createElement('img');
+        slide.src = photo.url;
+        slide.className = 'bg-slide';
+        if (index === 0) slide.classList.add('active');
+        carousel.appendChild(slide);
+    });
+    
+    startCarousel();
+}
+
+function useDefaultBackgrounds() {
+    const carousel = document.getElementById('bg-carousel');
+    if (!carousel) return;
+    
+    carousel.innerHTML = '';
+    
+    const defaultPhotos = [
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80',
+        'https://images.unsplash.com/photo-1519225421984-7919a5636c5c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80',
+        'https://images.unsplash.com/photo-1469371670807-013ccf47f584?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80'
+    ];
+    
+    defaultPhotos.forEach((url, index) => {
+        const slide = document.createElement('img');
+        slide.src = url;
+        slide.className = 'bg-slide';
+        if (index === 0) slide.classList.add('active');
+        carousel.appendChild(slide);
+    });
+    
+    startCarousel();
+}
+
+function startCarousel() {
+    if (carouselInterval) {
+        clearInterval(carouselInterval);
+    }
+    
+    carouselInterval = setInterval(() => {
+        nextSlide();
+    }, 4000);
+}
+
+function nextSlide() {
+    const slides = document.querySelectorAll('.bg-slide');
+    if (slides.length === 0) return;
+    
+    slides[currentSlide].classList.remove('active');
+    currentSlide = (currentSlide + 1) % slides.length;
+    slides[currentSlide].classList.add('active');
+}
+
+function stopCarousel() {
+    if (carouselInterval) {
+        clearInterval(carouselInterval);
+        carouselInterval = null;
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadBackgroundPhotos();
+});
+
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        stopCarousel();
+    } else {
+        startCarousel();
+    }
+});
+
+
+
+
         // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const nav = document.querySelector('nav');
