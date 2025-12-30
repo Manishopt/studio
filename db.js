@@ -239,8 +239,7 @@ if (typeof module !== 'undefined' && module.exports) {
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
         loadPhotosFromSupabase,
-        saveBackgroundPhoto,
-        loadBackgroundPhotos
+        saveBackgroundPhoto
     };
 }
 // For browser environment
@@ -251,7 +250,6 @@ if (typeof window !== 'undefined') {
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
         loadPhotosFromSupabase,
-        saveBackgroundPhoto,
-        loadBackgroundPhotos
+        saveBackgroundPhoto
     };
 }

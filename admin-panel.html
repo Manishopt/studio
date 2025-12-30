@@ -1839,18 +1839,8 @@
                 const data = await response.json();
                 console.log('Cloudinary upload successful:', data.secure_url);
                 
-                // Save to Supabase if available
-                if (typeof saveImage === 'function') {
-                    try {
-                        await saveImage(data.secure_url);
-                        console.log('Successfully saved to Supabase');
-                    } catch (error) {
-                        console.warn('Could not save to Supabase:', error.message);
-                        // Continue even if Supabase save fails
-                    }
-                } else {
-                    console.warn('saveImage function not found. Make sure db.js is loaded.');
-                }
+                // saveImage function disabled - using savePhotoToSupabase instead
+                console.log('Skipping saveImage - using savePhotoToSupabase instead');
                 
                 return {
                     success: true,
@@ -1882,89 +1872,86 @@
                     ...photoData
                 };
                 
-                // If photo already exists (has public_id), update it
-                if (photoData.public_id && typeof window.db !== 'undefined' && window.db.updatePhotoInSupabase) {
-                    // Check if photo exists first
-                    const existingPhotos = await window.db.loadPhotosFromSupabase();
-                    const existingPhoto = existingPhotos.find(p => p.public_id === photoData.public_id);
-                    
-                    if (existingPhoto) {
-                        // Update existing photo
-                        const updated = await window.db.updatePhotoInSupabase(photoData.public_id, {
-                            title: fullPhotoData.title,
-                            description: fullPhotoData.description,
-                            category: fullPhotoData.category,
-                            isMain: fullPhotoData.isMain
-                        });
-                        console.log('💾 Updated existing photo in Supabase:', updated);
-                        
-                        // Ensure only one main photo per category
-                        if (fullPhotoData.isMain) {
-                            await ensureSingleMainPhoto(fullPhotoData.category, photoData.public_id);
-                        }
-                        
-                        return { ...updated, isMain: updated.is_main || updated.isMain };
-                    }
-                }
+                // Save new photo to Supabase using direct API call
+                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify({
+                        url: fullPhotoData.url,
+                        public_id: fullPhotoData.public_id,
+                        category: fullPhotoData.category,
+                        title: fullPhotoData.title,
+                        description: fullPhotoData.description,
+                        is_main: fullPhotoData.isMain,
+                        uploaded_at: fullPhotoData.uploaded_at || new Date().toISOString(),
+                        format: fullPhotoData.format || null,
+                        width: fullPhotoData.width || null,
+                        height: fullPhotoData.height || null
+                    })
+                });
                 
-                // Save new photo to Supabase
-                if (typeof window.db !== 'undefined' && window.db.savePhotoToSupabase) {
-                    const saved = await window.db.savePhotoToSupabase(fullPhotoData);
-                    console.log('💾 Added new photo to Supabase:', saved);
+                if (response.ok) {
+                    const saved = await response.json();
+                    const savedPhoto = Array.isArray(saved) ? saved[0] : saved;
+                    console.log('💾 Added new photo to Supabase:', savedPhoto);
                     
-                    // Ensure only one main photo per category
-                    if (fullPhotoData.isMain) {
-                        await ensureSingleMainPhoto(fullPhotoData.category, photoData.public_id);
-                    }
+                    // Also update localStorage for offline fallback
+                    const existingPhotos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                    const newPhoto = { ...savedPhoto, isMain: savedPhoto.is_main || savedPhoto.isMain };
+                    existingPhotos.push(newPhoto);
+                    localStorage.setItem('cloudinaryPhotos', JSON.stringify(existingPhotos));
                     
-                    return { ...saved, isMain: saved.is_main || saved.isMain };
+                    return newPhoto;
                 } else {
-                    console.warn('⚠️ Supabase functions not available, falling back to localStorage');
-                    // Fallback to localStorage if Supabase is not available
-                    return savePhotoToLocalStorageFallback(photoData);
+                    throw new Error('Failed to save to Supabase');
                 }
             } catch (error) {
-                console.error('❌ Error saving photo to Supabase:', error);
-                // Fallback to localStorage on error
-                return savePhotoToLocalStorageFallback(photoData);
+                console.warn('⚠️ Error saving to Supabase, falling back to localStorage:', error);
+                // Fallback to localStorage
+                const existingPhotos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                const newPhoto = {
+                    ...photoData,
+                    id: Date.now().toString() + Math.random() // Unique ID for localStorage
+                };
+                existingPhotos.push(newPhoto);
+                localStorage.setItem('cloudinaryPhotos', JSON.stringify(existingPhotos));
+                return newPhoto;
             }
-        }
-        
-        // Fallback function for localStorage (used when Supabase is unavailable)
-        function savePhotoToLocalStorageFallback(photoData) {
-            let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-            const existingIndex = photos.findIndex(p => p.public_id === photoData.public_id);
-            
-            if (existingIndex >= 0) {
-                photos[existingIndex] = { ...photos[existingIndex], ...photoData };
-            } else {
-                photos.unshift(photoData);
-            }
-            
-            if (photoData.isMain) {
-                photos = photos.map(p => ({
-                    ...p,
-                    isMain: p.public_id === photoData.public_id ? true : 
-                           (p.category === photoData.category ? false : p.isMain)
-                }));
-            }
-            
-            localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
-            return photoData;
         }
         
         // Helper function to ensure only one main photo per category
         async function ensureSingleMainPhoto(category, currentPublicId) {
             try {
-                if (typeof window.db === 'undefined' || !window.db.loadPhotosFromSupabase) return;
+                // Load all photos from Supabase
+                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio', {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+                    }
+                });
                 
-                const allPhotos = await window.db.loadPhotosFromSupabase();
-                const categoryPhotos = allPhotos.filter(p => p.category === category && p.public_id !== currentPublicId);
-                
-                // Unset main flag for other photos in the same category
-                for (const photo of categoryPhotos) {
-                    if (photo.isMain || photo.is_main) {
-                        await window.db.updatePhotoInSupabase(photo.public_id, { isMain: false });
+                if (response.ok) {
+                    const allPhotos = await response.json();
+                    const categoryPhotos = allPhotos.filter(p => p.category === category && p.public_id !== currentPublicId);
+                    
+                    // Unset main flag for other photos in the same category
+                    for (const photo of categoryPhotos) {
+                        if (photo.isMain || photo.is_main) {
+                            await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${photo.public_id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                                    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ is_main: false })
+                            });
+                        }
                     }
                 }
             } catch (error) {
@@ -1972,88 +1959,61 @@
             }
         }
 
-        // Load photos from Supabase (replaces localStorage)
+        // Load photos from Supabase (FINAL WORKING VERSION)
         async function loadPhotosFromSupabase() {
+            const photoGrid = document.getElementById('photoGrid');
+            if (!photoGrid) return;
+            
             try {
-                const photoGrid = document.getElementById('photoGrid');
-                if (!photoGrid) return;
-                
-                let photos = [];
-                
-                // Try to load from Supabase directly
-                try {
-                    const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
-                        headers: {
-                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
-                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        photos = await response.json();
-                        console.log('✅ Loaded photos from Supabase:', photos.length);
-                        // Also update localStorage for offline fallback
-                        localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
-                    } else {
-                        throw new Error('Failed to load photos from Supabase');
+                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
                     }
-                } catch (error) {
-                    console.warn('⚠️ Error loading from Supabase, falling back to localStorage:', error);
-                    // Fallback to localStorage
-                    photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                }
+                });
                 
-                const categoryColors = {
-                    'Wedding': '#e74c3c',
-                    'Maternity': '#f39c12',
-                    'Portrait': '#9b59b6',
-                    'Commercial': '#3498db',
-                    'PreWedding': '#1abc9c',
-                    'Newborn': '#e91e63'
-                };
+                const photos = await response.json();
+                localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
                 
-                // Clear existing photos
                 photoGrid.innerHTML = '';
                 
-                photos.forEach(photo => {
+                if (photos.length === 0) {
+                    photoGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No photos uploaded yet.</div>';
+                    updatePhotoCount(0);
+                    return;
+                }
+                
+                photos.forEach((photo) => {
+                    if (!photo.url) return;
+                    
                     const photoItem = document.createElement('div');
                     photoItem.className = 'photo-item';
                     photoItem.setAttribute('data-category', photo.category);
                     photoItem.setAttribute('data-cloudinary-id', photo.public_id);
                     
                     const isMain = photo.isMain || photo.is_main || false;
+                    const categoryColors = {
+                        'Wedding': '#e74c3c', 'Maternity': '#f39c12', 'Portrait': '#9b59b6',
+                        'Commercial': '#3498db', 'PreWedding': '#1abc9c', 'Newborn': '#e91e63'
+                    };
                     
                     photoItem.innerHTML = `
                         <img src="${photo.url}" alt="${photo.title || photo.category + ' Photo'}" loading="lazy">
-                        <div class="photo-category-badge" style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem; font-weight: 600;">
+                        <div style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
                             ${photo.category} ${isMain ? '★' : ''}
                         </div>
                         <div class="photo-actions">
-                            <button class="btn-edit" onclick="editPhoto(this)" data-id="${photo.public_id}">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-set-main ${isMain ? 'active' : ''}" onclick="setAsMainPhoto('${photo.public_id}')" title="${isMain ? 'Main Photo' : 'Set as main photo'}">
-                                <i class="fas fa-star"></i>
-                            </button>
-                            <button class="btn-delete" onclick="deletePhoto(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                        <div class="photo-info" style="display: none;">
-                            <h4>${photo.title || photo.category + ' Photo'}</h4>
-                            <p>${photo.description || 'No description'}</p>
+                            <button class="btn-edit" onclick="editPhoto(this)" data-id="${photo.public_id}">Edit</button>
+                            <button class="btn-delete" onclick="deletePhoto(this)">Delete</button>
                         </div>
                     `;
                     
                     photoGrid.appendChild(photoItem);
                 });
                 
-                updatePhotoCount();
+                updatePhotoCount(photos.length);
             } catch (error) {
-                console.error('❌ Error loading photos:', error);
-                // Fallback to localStorage on error
-                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                console.log('📦 Loaded photos from localStorage fallback:', photos.length);
+                console.error('Error loading photos:', error);
             }
         }
 
@@ -2092,18 +2052,29 @@
                 // Delete from Supabase
                 if (cloudinaryId) {
                     try {
-                        if (typeof window.db !== 'undefined' && window.db.deletePhotoFromSupabase) {
-                            await window.db.deletePhotoFromSupabase(cloudinaryId);
+                        // Use direct Supabase API call
+                        const response = await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${cloudinaryId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
                             console.log('✅ Photo deleted from Supabase:', cloudinaryId);
-                        } else {
-                            // Fallback to localStorage
+                            
+                            // Also update localStorage
                             let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
                             photos = photos.filter(photo => photo.public_id !== cloudinaryId);
                             localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                        } else {
+                            throw new Error('Failed to delete from Supabase');
                         }
                     } catch (error) {
                         console.error('❌ Error deleting photo from Supabase:', error);
-                        // Fallback to localStorage on error
+                        // Fallback to localStorage only
                         let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
                         photos = photos.filter(photo => photo.public_id !== cloudinaryId);
                         localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
@@ -2118,13 +2089,13 @@
                 
                 setTimeout(() => {
                     photoAlert.style.display = 'none';
-                }, 2000);
+                }, 3000);
             }
         }
 
         // Update Photo Count
-        function updatePhotoCount() {
-            const totalPhotos = document.querySelectorAll('.photo-item').length;
+        function updatePhotoCount(count = null) {
+            const totalPhotos = count !== null ? count : document.querySelectorAll('.photo-item').length;
             document.getElementById('totalCount').textContent = totalPhotos;
         }
 
@@ -2136,12 +2107,23 @@
             // Load photo from Supabase or localStorage fallback
             let photo = null;
             try {
-                if (typeof window.db !== 'undefined' && window.db.loadPhotosFromSupabase) {
-                    const photos = await window.db.loadPhotosFromSupabase();
-                    photo = photos.find(p => p.public_id === photoId);
+                // Use direct Supabase API call
+                const response = await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${photoId}`, {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+                    }
+                });
+                
+                if (response.ok) {
+                    const photos = await response.json();
+                    photo = photos.length > 0 ? photos[0] : null;
                 }
             } catch (error) {
-                console.error('Error loading photo from Supabase:', error);
+                console.error('Error loading photo:', error);
+                // Fallback to localStorage
+                const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+                photo = photos.find(p => p.public_id === photoId);
             }
             
             // Fallback to localStorage if Supabase fails or photo not found
@@ -3104,12 +3086,11 @@
                 photos.forEach(photo => {
                     const photoItem = document.createElement('div');
                     photoItem.className = 'photo-item';
+                    photoItem.style.cssText = 'position: relative; border-radius: 10px; overflow: hidden;';
                     photoItem.innerHTML = `
-                        <img src="${photo.url}" alt="${photo.title || 'Background Photo'}">
-                        <div class="photo-actions">
-                            <button onclick="deleteBackgroundPhoto('${photo.id}')" class="btn btn-danger" style="padding: 5px 10px;">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
+                        <img src="${photo.url}" alt="${photo.title || 'Background Photo'}" style="width: 100%; height: 200px; object-fit: cover;">
+                        <div class="photo-actions" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 15px 10px; display: flex; justify-content: center;">
+                            <button onclick="deleteBackgroundPhoto('${photo.id}')" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(250, 112, 154, 0.4);">🗑️ Delete Background</button>
                         </div>
                     `;
                     grid.appendChild(photoItem);
@@ -3159,6 +3140,217 @@
         document.addEventListener('DOMContentLoaded', function() {
             setupBackgroundUpload();
         });
+        
+        // PERMANENT PHOTO MANAGEMENT FIX
+        window.loadPhotosDirect = async function() {
+            const photoGrid = document.getElementById('photoGrid');
+            if (!photoGrid) return;
+            
+            try {
+                const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?select=*', {
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+                    }
+                });
+                
+                const photos = await response.json();
+                localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
+                
+                photoGrid.innerHTML = '';
+                
+                if (photos.length === 0) {
+                    photoGrid.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No photos uploaded yet.</div>';
+                    updatePhotoCount(0);
+                    return;
+                }
+                
+                const categoryColors = {
+                    'Wedding': '#e74c3c', 'Maternity': '#f39c12', 'Portrait': '#9b59b6',
+                    'Commercial': '#3498db', 'PreWedding': '#1abc9c', 'Newborn': '#e91e63'
+                };
+                
+                photos.forEach((photo) => {
+                    if (!photo.url) return;
+                    
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'photo-item';
+                    photoItem.setAttribute('data-category', photo.category);
+                    photoItem.setAttribute('data-cloudinary-id', photo.public_id);
+                    
+                    const isMain = photo.isMain || photo.is_main || false;
+                    
+                    photoItem.innerHTML = `
+                        <img src="${photo.url}" alt="${photo.title || photo.category + ' Photo'}" loading="lazy" style="width: 100%; height: 200px; object-fit: cover;">
+                        <div style="position: absolute; top: 10px; left: 10px; background: ${categoryColors[photo.category] || '#333'}; color: white; padding: 5px 10px; border-radius: 5px; font-size: 0.8rem;">
+                            ${photo.category} ${isMain ? '★' : ''}
+                        </div>
+                        <div class="photo-actions" style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 15px 10px; display: flex; justify-content: space-between; align-items: center;">
+                            <button class="btn-edit" onclick="window.editPhoto(this)" data-id="${photo.public_id}" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">✏️ Edit</button>
+                            <button class="btn-set-main" onclick="window.setAsMainPhoto('${photo.public_id}')" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(240, 147, 251, 0.4);">⭐ Star</button>
+                            <button class="btn-delete" onclick="window.deletePhoto(this)" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-weight: 600; font-size: 0.85rem; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(250, 112, 154, 0.4);">🗑️ Delete</button>
+                        </div>
+                    `;
+                    
+                    photoGrid.appendChild(photoItem);
+                });
+                
+                updatePhotoCount(photos.length);
+                console.log(`✅ Loaded ${photos.length} photos successfully`);
+                
+            } catch (error) {
+                console.error('Error loading photos:', error);
+            }
+        };
+        
+        // Button functions
+        window.setAsMainPhoto = async function(photoId) {
+            try {
+                const response = await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${photoId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ is_main: true })
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Photo set as main successfully');
+                    window.loadPhotosDirect();
+                }
+            } catch (error) {
+                console.error('Error setting main photo:', error);
+            }
+        };
+        
+        window.deletePhoto = async function(btn) {
+            if (confirm('Are you sure you want to delete this photo?')) {
+                const photoItem = btn.closest('.photo-item');
+                const cloudinaryId = photoItem.getAttribute('data-cloudinary-id');
+                
+                photoItem.remove();
+                
+                try {
+                    const response = await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${cloudinaryId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                            'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        console.log('✅ Photo deleted successfully');
+                    }
+                } catch (error) {
+                    console.error('Error deleting photo:', error);
+                }
+                
+                updatePhotoCount();
+            }
+        };
+        
+        // Edit Photo Functions
+        window.editPhoto = async function(btn) {
+            const photoItem = btn.closest('.photo-item');
+            const photoId = btn.getAttribute('data-id');
+            
+            // Get current photo data
+            const photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
+            const photo = photos.find(p => p.public_id === photoId);
+            
+            if (!photo) {
+                alert('Photo not found!');
+                return;
+            }
+            
+            // Create edit form
+            const formHtml = `
+                <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); z-index: 10000; min-width: 400px;">
+                    <h3 style="color: white; text-align: center; margin-bottom: 20px; font-size: 1.5rem;">✏️ Edit Photo Details</h3>
+                    <label style="color: white; font-weight: 600;">Title:</label><br>
+                    <input type="text" id="editTitle" value="${photo.title || ''}" style="width: 100%; margin-bottom: 15px; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; background: rgba(255,255,255,0.9);"><br>
+                    <label style="color: white; font-weight: 600;">Description:</label><br>
+                    <textarea id="editDescription" style="width: 100%; margin-bottom: 15px; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; background: rgba(255,255,255,0.9); min-height: 80px;">${photo.description || ''}</textarea><br>
+                    <label style="color: white; font-weight: 600;">Category:</label><br>
+                    <select id="editCategory" style="width: 100%; margin-bottom: 20px; padding: 12px; border: none; border-radius: 10px; font-size: 1rem; background: rgba(255,255,255,0.9);">
+                        <option value="Wedding" ${photo.category === 'Wedding' ? 'selected' : ''}>Wedding</option>
+                        <option value="Maternity" ${photo.category === 'Maternity' ? 'selected' : ''}>Maternity</option>
+                        <option value="Portrait" ${photo.category === 'Portrait' ? 'selected' : ''}>Portrait</option>
+                        <option value="Commercial" ${photo.category === 'Commercial' ? 'selected' : ''}>Commercial</option>
+                        <option value="PreWedding" ${photo.category === 'PreWedding' ? 'selected' : ''}>PreWedding</option>
+                        <option value="Newborn" ${photo.category === 'Newborn' ? 'selected' : ''}>Newborn</option>
+                    </select><br>
+                    <div style="display: flex; justify-content: space-between; gap: 10px;">
+                        <button onclick="window.saveEdit('${photoId}')" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; padding: 12px 25px; border: none; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4); flex: 1;">💾 Save Changes</button>
+                        <button onclick="window.closeEdit()" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); color: white; padding: 12px 25px; border: none; border-radius: 25px; cursor: pointer; font-weight: 700; font-size: 1rem; transition: all 0.3s ease; box-shadow: 0 8px 20px rgba(250, 112, 154, 0.4); flex: 1;">❌ Cancel</button>
+                    </div>
+                </div>
+                <div id="editOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 9999;"></div>
+            `;
+            
+            // Add form to page
+            const editDiv = document.createElement('div');
+            editDiv.id = 'editForm';
+            editDiv.innerHTML = formHtml;
+            document.body.appendChild(editDiv);
+        };
+        
+        // Save edit function
+        window.saveEdit = async function(photoId) {
+            const title = document.getElementById('editTitle').value;
+            const description = document.getElementById('editDescription').value;
+            const category = document.getElementById('editCategory').value;
+            
+            try {
+                // Update photo in Supabase using PATCH
+                const response = await fetch(`https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?public_id=eq.${photoId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        description: description,
+                        category: category
+                    })
+                });
+                
+                if (response.ok) {
+                    console.log('✅ Photo updated successfully');
+                    window.closeEdit();
+                    window.loadPhotosDirect();
+                } else {
+                    throw new Error('Failed to update photo');
+                }
+                
+            } catch (error) {
+                console.error('Error updating photo:', error);
+                alert('Error updating photo. Please try again.');
+            }
+        };
+        
+        // Close edit function
+        window.closeEdit = function() {
+            const editForm = document.getElementById('editForm');
+            if (editForm) {
+                editForm.remove();
+            }
+        };
+        
+        // Override and auto-load
+        window.loadPhotosFromSupabase = window.loadPhotosDirect;
+        
+        // Auto-load on page load
+        window.addEventListener('load', function() {
+            setTimeout(window.loadPhotosDirect, 500);
+        });
+        
+        console.log('Permanent photo management fix loaded!');
     </script>
 </body>
 </html>
