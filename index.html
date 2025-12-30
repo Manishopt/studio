@@ -198,6 +198,21 @@
             opacity: 1;
         }
 
+        /* Mobile-specific background carousel fix */
+        @media (max-width: 768px) {
+            .bg-slide {
+                object-fit: cover;
+                object-position: center;
+                width: 100vw;
+                height: 100vh;
+            }
+            
+            #bg-carousel {
+                width: 100vw;
+                height: 100vh;
+            }
+        }
+
         #carousel-overlay {
             position: fixed;
             top: 0;
