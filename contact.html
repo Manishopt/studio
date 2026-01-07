@@ -242,10 +242,7 @@
         /* Hero Section */
         .hero {
             position: relative;
-            background: url('https://images.unsplash.com/photo-1519741497674-61137153046e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') center/cover no-repeat,
-                        url('https://picsum.photos/seed/photography-studio/1920/1080.jpg') center/cover no-repeat,
-                        url('https://images.unsplash.com/photo-1469371670807-013ccf47f584?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80') center/cover no-repeat;
-            background-color: #2c3e50; /* Dark fallback color */
+            background: transparent; /* Remove static background */
             color: white;
             text-align: center;
             padding: 120px 20px 80px;
@@ -265,19 +262,55 @@
             }
         }
         
-        .hero::before {
-            content: '';
+        /* ===== BACKGROUND PHOTO CAROUSEL ===== */
+        #bg-carousel {
             position: absolute;
             top: 0;
             left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.7));
+            width: 100%;
+            height: 100%;
             z-index: -1;
+            overflow: hidden;
         }
-        
-        [data-theme="dark"] .hero::before {
-            background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7));
+
+        .bg-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+
+        .bg-slide.active {
+            opacity: 1;
+        }
+
+        /* Mobile-specific background carousel fix */
+        @media (max-width: 768px) {
+            .bg-slide {
+                object-fit: cover;
+                object-position: center center;
+                width: 100%;
+                height: 100%;
+            }
+            
+            #bg-carousel {
+                width: 100%;
+                height: 100%;
+            }
+        }
+
+        #carousel-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
         }
 
         .hero-content {
@@ -1063,6 +1096,12 @@
         </div>
     </section>
 
+    <!-- Background Photo Carousel -->
+    <div id="bg-carousel">
+        <!-- Background slides will be dynamically loaded here -->
+    </div>
+    <div id="carousel-overlay"></div>
+
     <!-- Main Container -->
     <div class="container">
         <div class="contact-grid">
@@ -1252,6 +1291,125 @@
     </div>
 
     <script>
+        // Background Photo Carousel
+        let currentSlide = 0;
+        let backgroundPhotos = [];
+        let carouselInterval;
+
+        async function loadBackgroundPhotos() {
+            try {
+                const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
+                const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
+                
+                const response = await fetch(`${SUPABASE_URL}/rest/v1/portfolio?order=uploaded_at.desc&limit=10`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_KEY,
+                        'Authorization': `Bearer ${SUPABASE_KEY}`
+                    }
+                });
+                
+                if (response.ok) {
+                    backgroundPhotos = await response.json();
+                    if (backgroundPhotos.length > 0) {
+                        initCarousel();
+                    } else {
+                        useDefaultBackgrounds();
+                    }
+                } else {
+                    throw new Error('Failed to load background photos');
+                }
+            } catch (error) {
+                console.error('Error loading background photos:', error);
+                useDefaultBackgrounds();
+            }
+        }
+
+        function initCarousel() {
+            const carousel = document.getElementById('bg-carousel');
+            if (!carousel) return;
+            
+            carousel.innerHTML = '';
+            
+            if (backgroundPhotos.length === 0) {
+                useDefaultBackgrounds();
+                return;
+            }
+            
+            backgroundPhotos.forEach((photo, index) => {
+                const slide = document.createElement('img');
+                slide.src = photo.url;
+                slide.className = 'bg-slide';
+                if (index === 0) slide.classList.add('active');
+                carousel.appendChild(slide);
+            });
+            
+            startCarousel();
+        }
+
+        function useDefaultBackgrounds() {
+            const carousel = document.getElementById('bg-carousel');
+            if (!carousel) return;
+            
+            carousel.innerHTML = '';
+            
+            const defaultPhotos = [
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c3_pbw9mg.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c4_dldrbt.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c2_pyeqva.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805498/c1_jb0a1n.jpg'
+            ];
+            
+            defaultPhotos.forEach((url, index) => {
+                const slide = document.createElement('img');
+                slide.src = url;
+                slide.className = 'bg-slide';
+                if (index === 0) slide.classList.add('active');
+                carousel.appendChild(slide);
+            });
+            
+            startCarousel();
+        }
+
+        function startCarousel() {
+            if (carouselInterval) {
+                clearInterval(carouselInterval);
+            }
+            
+            carouselInterval = setInterval(() => {
+                nextSlide();
+            }, 5000); // 5 seconds
+        }
+
+        function nextSlide() {
+            const slides = document.querySelectorAll('.bg-slide');
+            if (slides.length === 0) return;
+            
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (currentSlide + 1) % slides.length;
+            slides[currentSlide].classList.add('active');
+        }
+
+        function stopCarousel() {
+            if (carouselInterval) {
+                clearInterval(carouselInterval);
+                carouselInterval = null;
+            }
+        }
+
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                stopCarousel();
+            } else {
+                startCarousel();
+            }
+        });
+
+        // Initialize carousel on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBackgroundPhotos();
+        });
+
         // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
