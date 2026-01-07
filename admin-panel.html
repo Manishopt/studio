@@ -889,6 +889,8 @@
                             <option value="PreWedding">Pre-Wedding Photography</option>
                             <option value="Newborn">Newborn Photography</option>
                             <option value="Commercial">Commercial Photography</option>
+                            <option value="Nature">Nature Photography</option>
+                            <option value="Fashion">Fashion Photography</option>
                             <option value="as-seen-on">🌟 As Seen On</option>
                         </select>
                     </div>
@@ -1043,6 +1045,8 @@
                 <button class="btn" onclick="filterPortfolio('Commercial')">Commercial Photography</button>
                 <button class="btn" onclick="filterPortfolio('PreWedding')">Pre-Wedding Shoots</button>
                 <button class="btn" onclick="filterPortfolio('Newborn')">Newborn Photography</button>
+                <button class="btn" onclick="filterPortfolio('Nature')">Nature Photography</button>
+                <button class="btn" onclick="filterPortfolio('Fashion')">Fashion Photography</button>
             </div>
 
             <!-- Main Featured Photos -->
@@ -2293,6 +2297,8 @@
                         <option value="Commercial" ${photo.category === 'Commercial' ? 'selected' : ''}>Commercial</option>
                         <option value="PreWedding" ${photo.category === 'PreWedding' ? 'selected' : ''}>Pre-Wedding</option>
                         <option value="Newborn" ${photo.category === 'Newborn' ? 'selected' : ''}>Newborn</option>
+                        <option value="Nature" ${photo.category === 'Nature' ? 'selected' : ''}>Nature Photography</option>
+                        <option value="Fashion" ${photo.category === 'Fashion' ? 'selected' : ''}>Fashion Photography</option>
                         <option value="as-seen-on" ${photo.category === 'as-seen-on' ? 'selected' : ''}>🌟 As Seen On</option>
                     </select>
                 </div>
@@ -2595,7 +2601,7 @@
                 const thumbnails = await loadThumbnailsFromSupabase();
                 
                 // Define categories
-                const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial'];
+                const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
                 
                 // Clear existing content
                 thumbnailsGrid.innerHTML = '';

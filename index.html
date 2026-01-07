@@ -2074,12 +2074,14 @@ document.addEventListener('visibilitychange', function() {
             }
             
             // Group photos by category
-            const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial'];
+            const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
             const categoryIcons = {
                 'Wedding': 'fa-camera',
                 'Maternity': 'fa-baby', 
                 'Portrait': 'fa-user',
-                'Commercial': 'fa-briefcase'
+                'Commercial': 'fa-briefcase',
+                'Nature': 'fa-tree',
+                'Fashion': 'fa-tshirt'
             };
             
             // Load thumbnails from Supabase
@@ -2123,7 +2125,7 @@ document.addEventListener('visibilitychange', function() {
                         // Show placeholder if no photos uploaded
                         figure.innerHTML = `
                             <div class="portfolio-placeholder">
-                                <i class="fas ${categoryIcons[category]}"></i>
+                                <i class="fas ${categoryIcons[category] || 'fa-camera'}"></i>
                                 <span>${category} Photography</span>
                                 <div class="view-more-btn">
                                     <i class="fas fa-eye"></i> View More
@@ -2164,7 +2166,7 @@ document.addEventListener('visibilitychange', function() {
                     } else {
                         figure.innerHTML = `
                             <div class="portfolio-placeholder">
-                                <i class="fas ${categoryIcons[category]}"></i>
+                                <i class="fas ${categoryIcons[category] || 'fa-camera'}"></i>
                                 <span>${category} Photography</span>
                                 <div class="view-more-btn">
                                     <i class="fas fa-eye"></i> View More
