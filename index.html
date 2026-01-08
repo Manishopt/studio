@@ -14,7 +14,6 @@
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/1042/1042390.png">
     
     <!-- External Libraries -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/css/lightbox.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -2255,22 +2254,6 @@
     </a>
 
     <!-- External Scripts -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.3/js/lightbox.min.js"></script>
-    <script>
-        // Initialize lightbox with options (if available)
-        if (typeof lightbox !== 'undefined') {
-            lightbox.option({
-                'resizeDuration': 200,
-                'wrapAround': true,
-                'alwaysShowNavOnTouchDevices': true,
-                'disableScrolling': true,
-                'positionFromTop': 100
-            });
-        } else {
-            console.warn('Lightbox not loaded - gallery images will open in new tab');
-        }
-    </script>
-
     <!-- Custom Scripts -->
     <script>
 // Background Photo Carousel
@@ -2515,8 +2498,7 @@ document.addEventListener('visibilitychange', function() {
                         ...photo,
                         isMain: photo.is_main || false
                     }));
-                    console.log('✅ Loaded photos from Supabase:', photos.length);
-                } else {
+                                    } else {
                     throw new Error('Failed to load from Supabase');
                 }
             } catch (error) {
@@ -2538,8 +2520,7 @@ document.addEventListener('visibilitychange', function() {
             
             // Load thumbnails from Supabase
             loadThumbnailsFromSupabase().then(thumbnails => {
-                console.log('🖼️ Thumbnails loaded from Supabase:', thumbnails);
-                
+                                
                 categories.forEach(category => {
                     const categoryPhotos = photos.filter(photo => photo.category === category);
                     const figure = document.createElement('figure');
@@ -2658,8 +2639,7 @@ document.addEventListener('visibilitychange', function() {
                 }
                 
                 const thumbnails = await response.json();
-                console.log('📥 Successfully loaded thumbnails from Supabase:', thumbnails);
-                return thumbnails;
+                                return thumbnails;
             } catch (error) {
                 console.error('❌ Error loading thumbnails from Supabase:', error);
                 return []; // Return empty array on error
@@ -2714,8 +2694,7 @@ document.addEventListener('visibilitychange', function() {
                             ...photo,
                             isMain: photo.is_main || false
                         }));
-                        console.log(`✅ Loaded ${photos.length} ${category} photos from Supabase`);
-                    } else {
+                                            } else {
                         throw new Error('Failed to load from Supabase');
                     }
                 } catch (error) {
@@ -3049,13 +3028,8 @@ document.addEventListener('visibilitychange', function() {
                          grid.innerHTML = '';
                          
                          // Add photos to grid
-                         photos.forEach((photo, index) => {
-                             const item = createAsSeenOnItem(photo, index);
-                             grid.appendChild(item);
-                         });
-                         
-                         console.log(`✅ Loaded ${photos.length} As Seen On photos from Supabase`);
-                     } else {
+                                                                               
+                                              } else {
                          // No photos found, show placeholder
                          showAsSeenOnPlaceholder();
                      }
@@ -3112,8 +3086,7 @@ document.addEventListener('visibilitychange', function() {
          // Debug function to check Supabase data
          async function debugAsSeenOnData() {
              try {
-                 console.log('🔍 Debugging As Seen On data...');
-                 const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?category=eq.as-seen-on&order=uploaded_at.desc', {
+                                  const response = await fetch('https://xaiperlmtvanjuvvrvpl.supabase.co/rest/v1/portfolio?category=eq.as-seen-on&order=uploaded_at.desc', {
                      method: 'GET',
                      headers: {
                          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw',
@@ -3124,17 +3097,6 @@ document.addEventListener('visibilitychange', function() {
                  
                  if (response.ok) {
                      const photos = await response.json();
-                     console.log('✅ Found As Seen On photos:', photos);
-                     console.log('📊 Total photos:', photos.length);
-                     photos.forEach((photo, index) => {
-                         console.log(`📸 Photo ${index + 1}:`, {
-                             id: photo.id,
-                             url: photo.url,
-                             title: photo.title,
-                             category: photo.category,
-                             uploaded_at: photo.uploaded_at
-                         });
-                     });
                  } else {
                      console.error('❌ Error fetching data:', response.status, response.statusText);
                  }
