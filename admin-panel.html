@@ -8,11 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
     <style>
         * {
             margin: 0;
@@ -633,6 +628,77 @@
             background: rgba(200, 35, 51, 1) !important;
         }
 
+        /* Image Upload Styles */
+        .image-upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 10px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .image-upload-area:hover {
+            border-color: #D4A574;
+            background: rgba(212, 165, 116, 0.05);
+        }
+
+        .image-upload-area.drag-over {
+            border-color: #D4A574;
+            background: rgba(212, 165, 116, 0.1);
+            transform: scale(1.02);
+        }
+
+        .image-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 15px;
+            background: #f8f9fa;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            overflow: hidden;
+            border: 3px solid #e9ecef;
+        }
+
+        .image-preview:hover {
+            border-color: #D4A574;
+            transform: scale(1.05);
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        .image-preview i {
+            font-size: 2rem;
+            color: #bdc3c7;
+            margin-bottom: 5px;
+        }
+
+        .image-preview span {
+            font-size: 0.8rem;
+            color: #7f8c8d;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+
         /* Responsive Design */
         @media (max-width: 968px) {
             .sidebar {
@@ -1114,10 +1180,39 @@
                 <h2>Manage Testimonials</h2>
             </div>
 
-            <form id="testimonialForm">
+            <form id="testimonialForm" enctype="multipart/form-data">
                 <div class="form-group">
                     <label>Client Name</label>
                     <input type="text" id="clientName" placeholder="Enter client name" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Client Image (Optional)</label>
+                    <div class="image-upload-area">
+                        <input type="file" id="clientImage" accept="image/*" style="display: none;">
+                        <div class="image-preview" id="clientImagePreview">
+                            <i class="fas fa-user"></i>
+                            <span>Click to upload or drag & drop image here</span>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('clientImage').click()">
+                            <i class="fas fa-upload"></i> Choose Image
+                        </button>
+                        <button type="button" class="btn btn-danger" id="removeClientImage" style="display: none;">
+                            <i class="fas fa-trash"></i> Remove Image
+                        </button>
+                    </div>
+                    <small>Recommended: Square image (at least 200x200px). JPG, PNG formats. Maximum size: 10MB.</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Rating</label>
+                    <select id="testimonialRating">
+                        <option value="5">⭐⭐⭐⭐⭐ (5 Stars)</option>
+                        <option value="4">⭐⭐⭐⭐ (4 Stars)</option>
+                        <option value="3">⭐⭐⭐ (3 Stars)</option>
+                        <option value="2">⭐⭐ (2 Stars)</option>
+                        <option value="1">⭐ (1 Star)</option>
+                    </select>
                 </div>
 
                 <div class="form-group">
@@ -1135,18 +1230,12 @@
                     <tr>
                         <th>Client Name</th>
                         <th>Testimonial</th>
+                        <th>Rating</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="testimonialsTable">
-                    <tr>
-                        <td>Shobit & Kavita</td>
-                        <td>Tejender was amazing! She made us feel so comfortable...</td>
-                        <td class="table-actions">
-                            <button class="btn-edit"><i class="fas fa-edit"></i> Edit</button>
-                            <button class="btn-delete"><i class="fas fa-trash"></i> Delete</button>
-                        </td>
-                    </tr>
+                    <!-- Testimonials will be loaded dynamically from Firebase -->
                 </tbody>
             </table>
         </div>
@@ -1338,31 +1427,37 @@
         const uploadArea = document.getElementById('uploadArea');
         const photoUpload = document.getElementById('photoUpload');
 
-        uploadArea.addEventListener('click', () => {
-            photoUpload.click();
-        });
+        if (uploadArea && photoUpload) {
+            uploadArea.addEventListener('click', () => {
+                photoUpload.click();
+            });
 
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
 
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
 
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            
-            const files = e.dataTransfer.files;
-            handleFiles(files);
-        });
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                handleFiles(files);
+            });
+        } else {
+            // Photo upload elements not found - silent handling
+        }
 
-        photoUpload.addEventListener('change', (e) => {
-            const files = e.target.files;
-            handleFiles(files);
-        });
+        if (photoUpload) {
+            photoUpload.addEventListener('change', (e) => {
+                const files = e.target.files;
+                handleFiles(files);
+            });
+        }
 
         function handleFiles(files) {
             const photoUpload = document.getElementById('photoUpload');
@@ -1416,9 +1511,6 @@
             
             // Show upload button
             uploadButton.style.display = 'inline-block';
-            
-            // Log for debugging
-            console.log('Files ready for upload:', files.length);
         }
         
         // Format file size to human readable format
@@ -1464,13 +1556,105 @@
             servicesList.appendChild(newService);
         }
 
-        // Testimonials form - Save to Firebase
+        // Testimonials form - Save to Firebase with image upload
         const testimonialForm = document.getElementById('testimonialForm');
+        const clientImageInput = document.getElementById('clientImage');
+        const clientImagePreview = document.getElementById('clientImagePreview');
+        const removeClientImageBtn = document.getElementById('removeClientImage');
+        
+        // Image preview functionality
+        clientImagePreview.addEventListener('click', () => {
+            clientImageInput.click();
+        });
+        
+        clientImageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageFile(file);
+            }
+        });
+        
+        // Drag and drop functionality
+        const imageUploadArea = document.querySelector('.image-upload-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            imageUploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            imageUploadArea.addEventListener(eventName, () => {
+                imageUploadArea.classList.add('drag-over');
+            }, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            imageUploadArea.addEventListener(eventName, () => {
+                imageUploadArea.classList.remove('drag-over');
+            }, false);
+        });
+        
+        imageUploadArea.addEventListener('drop', (e) => {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageFile(files[0]);
+            }
+        }, false);
+        
+        function handleImageFile(file) {
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file (JPG, PNG, etc.)');
+                return;
+            }
+            
+            // Validate file size (10MB limit)
+            const maxSize = 10 * 1024 * 1024; // 10MB in bytes
+            if (file.size > maxSize) {
+                alert('Image size must be less than 10MB. Current size: ' + (file.size / 1024 / 1024).toFixed(2) + 'MB');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                clientImagePreview.innerHTML = `<img src="${e.target.result}" alt="Client preview">`;
+                removeClientImageBtn.style.display = 'inline-block';
+                
+                // Update the file input to have the correct file
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                clientImageInput.files = dataTransfer.files;
+            };
+            
+            reader.onerror = (error) => {
+                console.error('❌ Error reading file:', error);
+                alert('Error reading image file. Please try again.');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+        
+        removeClientImageBtn.addEventListener('click', () => {
+            clientImageInput.value = '';
+            clientImagePreview.innerHTML = `
+                <i class="fas fa-user"></i>
+                <span>Click to upload client image</span>
+            `;
+            removeClientImageBtn.style.display = 'none';
+        });
+        
         testimonialForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const clientName = document.getElementById('clientName').value;
             const testimonialText = document.getElementById('testimonialText').value;
+            const rating = parseInt(document.getElementById('testimonialRating').value);
             const submitButton = e.target.querySelector('button[type="submit"]');
             const alert = document.getElementById('testimonialsAlert');
             
@@ -1481,109 +1665,274 @@
             }
             
             try {
-                // Save to Firebase
-                const result = await firebaseDB.addTestimonial({
+                // Handle image upload if provided
+                let clientImageUrl = null;
+                const imageFile = clientImageInput.files[0];
+                
+                if (imageFile) {
+                    // Show uploading message
+                    alert.textContent = '📤 Uploading image...';
+                    alert.style.display = 'block';
+                    alert.className = 'alert alert-success';
+                    
+                    // Upload to Cloudinary using existing cloudinary-upload.js
+                    if (typeof uploadImageToCloudinary === 'function') {
+                        const uploadResult = await uploadImageToCloudinary(imageFile, 'testimonial');
+                        
+                        if (uploadResult.success) {
+                            clientImageUrl = uploadResult.url;
+                            alert.textContent = '✅ Image uploaded! Saving testimonial...';
+                        } else {
+                            console.error('❌ Upload failed:', uploadResult.error);
+                            throw new Error(uploadResult.error);
+                        }
+                    } else {
+                        console.warn('⚠️ uploadImageToCloudinary function not found, skipping image upload');
+                    }
+                }
+                
+                // Save to Firebase using firebaseDB
+                const testimonialData = {
                     clientName: clientName,
                     testimonialText: testimonialText,
-                    rating: 5
-                });
+                    rating: rating,
+                    clientImage: clientImageUrl
+                };
+                
+                let result;
+                if (typeof firebaseDB !== 'undefined' && firebaseDB.addTestimonial) {
+                    result = await firebaseDB.addTestimonial(testimonialData);
+                } else {
+                    // Fallback to localStorage if Firebase is not available
+                    console.warn('⚠️ Firebase not available, using localStorage fallback');
+                    const fallbackData = {
+                        id: Date.now().toString(),
+                        client_name: clientName,
+                        testimonial_text: testimonialText,
+                        rating: rating,
+                        client_image: clientImageUrl,
+                        created_at: new Date().toISOString()
+                    };
+                    
+                    let testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
+                    testimonials.unshift(fallbackData);
+                    localStorage.setItem('testimonials', JSON.stringify(testimonials));
+                    
+                    result = { success: true, id: fallbackData.id, data: fallbackData };
+                }
                 
                 if (result.success) {
+                    // Show success message immediately
+                    alert.textContent = '✅ Testimonial added successfully!';
+                    alert.style.display = 'block';
+                    alert.className = 'alert alert-success';
+                    
                     // Add to table
                     const table = document.getElementById('testimonialsTable');
                     const newRow = table.insertRow();
-                    newRow.setAttribute('data-testimonial-id', result.id);
+                    newRow.setAttribute('data-testimonial-id', result.id || result.data?.id);
+                    
+                    // Generate star rating display
+                    const stars = '⭐'.repeat(rating);
+                    
                     newRow.innerHTML = `
                         <td>${clientName}</td>
                         <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
+                        <td>${stars}</td>
                         <td class="table-actions">
-                            <button class="btn-delete" onclick="deleteTestimonialFromFirebase('${result.id}')">
+                            <button class="btn-delete" onclick="deleteTestimonial('${result.id || result.data?.id}')">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </td>
                     `;
                     
-                    // Show success message
-                    alert.textContent = '✅ Testimonial saved to Firebase!';
-                    alert.style.display = 'block';
-                    
                     // Reset form
                     testimonialForm.reset();
+                    clientImagePreview.innerHTML = `
+                        <i class="fas fa-user"></i>
+                        <span>Click to upload or drag & drop image here</span>
+                    `;
+                    removeClientImageBtn.style.display = 'none';
+                    
+                    // Reload testimonials to refresh list
+                    setTimeout(async () => {
+                        await loadTestimonials();
+                        // Hide success message after reload
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 2000);
+                    }, 1000);
                 } else {
-                    throw new Error(result.error);
+                    throw new Error(result.error || 'Failed to save testimonial');
                 }
             } catch (error) {
                 alert.textContent = '❌ Error: ' + error.message;
                 alert.style.display = 'block';
+                alert.className = 'alert alert-error';
                 console.error('Error adding testimonial:', error);
             } finally {
                 // Re-enable button
                 if (submitButton) {
                     submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="fas fa-save"></i> Add Testimonial';
+                    submitButton.innerHTML = '<i class="fas fa-plus"></i> Add Testimonial';
                 }
             }
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 3000);
         });
         
-        // Delete testimonial from Firebase
-        async function deleteTestimonialFromFirebase(testimonialId) {
+        // Delete testimonial (works with both Firebase and localStorage)
+        async function deleteTestimonial(testimonialId) {
             if (!confirm('Are you sure you want to delete this testimonial?')) {
                 return;
             }
             
             try {
-                const result = await firebaseDB.deleteTestimonial(testimonialId);
+                let result;
+                
+                // Try Firebase first
+                if (typeof firebaseDB !== 'undefined' && firebaseDB.deleteTestimonial) {
+                    result = await firebaseDB.deleteTestimonial(testimonialId);
+                } else {
+                    // Fallback to localStorage
+                    let testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
+                    testimonials = testimonials.filter(t => t.id !== testimonialId);
+                    localStorage.setItem('testimonials', JSON.stringify(testimonials));
+                    result = { success: true };
+                }
                 
                 if (result.success) {
                     // Remove from table
                     const row = document.querySelector(`tr[data-testimonial-id="${testimonialId}"]`);
-                    if (row) row.remove();
                     
+                    if (row) {
+                        row.remove();
+                    }
+                    
+                    // Show success message
                     const alert = document.getElementById('testimonialsAlert');
-                    alert.textContent = '✅ Testimonial deleted!';
+                    alert.textContent = '✅ Testimonial deleted successfully!';
                     alert.style.display = 'block';
-                    setTimeout(() => alert.style.display = 'none', 2000);
+                    alert.className = 'alert alert-success';
+                    
+                    // Hide message after 3 seconds
+                    setTimeout(() => {
+                        alert.style.display = 'none';
+                    }, 3000);
+                } else {
+                    throw new Error(result.error || 'Failed to delete testimonial');
                 }
             } catch (error) {
-                alert('Error deleting testimonial: ' + error.message);
+                const alert = document.getElementById('testimonialsAlert');
+                alert.textContent = '❌ Error deleting testimonial: ' + error.message;
+                alert.style.display = 'block';
+                alert.className = 'alert alert-error';
+                console.error('Error deleting testimonial:', error);
             }
         }
         
-        // Load testimonials from Firebase on page load
-        async function loadTestimonialsFromFirebase() {
+        // Load testimonials (works with both Firebase and localStorage)
+        async function loadTestimonials() {
             try {
-                const result = await firebaseDB.getTestimonials();
+                let testimonials = [];
                 
-                if (result.success) {
-                    const table = document.getElementById('testimonialsTable');
-                    // Clear existing rows (except header)
-                    while (table.rows.length > 1) {
-                        table.deleteRow(1);
+                // Try Firebase first
+                if (typeof firebaseDB !== 'undefined' && firebaseDB.getTestimonials) {
+                    const result = await firebaseDB.getTestimonials();
+                    if (result.success) {
+                        testimonials = result.data;
                     }
-                    
-                    // Add testimonials from Firebase
-                    result.data.forEach(testimonial => {
-                        const newRow = table.insertRow();
-                        newRow.setAttribute('data-testimonial-id', testimonial.id);
-                        newRow.innerHTML = `
-                            <td>${testimonial.clientName}</td>
-                            <td>${testimonial.testimonialText.substring(0, 50)}${testimonial.testimonialText.length > 50 ? '...' : ''}</td>
-                            <td class="table-actions">
-                                <button class="btn-delete" onclick="deleteTestimonialFromFirebase('${testimonial.id}')">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </td>
-                        `;
-                    });
-                    
-                    console.log(`✅ Loaded ${result.data.length} testimonials from Firebase`);
+                } else {
+                    console.warn('Firebase not available, using localStorage fallback');
                 }
+                
+                // Fallback to localStorage if Firebase failed or returned no data
+                if (testimonials.length === 0) {
+                    testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
+                    
+                    // Migrate localStorage testimonials to Firebase if available
+                    if (testimonials.length > 0 && typeof firebaseDB !== 'undefined' && firebaseDB.addTestimonial) {
+                        const alert = document.getElementById('testimonialsAlert');
+                        if (alert) {
+                            alert.textContent = '🔄 Migrating testimonials to Firebase...';
+                            alert.style.display = 'block';
+                            alert.className = 'alert alert-success';
+                        }
+                        
+                        let migratedCount = 0;
+                        for (const testimonial of testimonials) {
+                            try {
+                                await firebaseDB.addTestimonial({
+                                    clientName: testimonial.client_name,
+                                    testimonialText: testimonial.testimonial_text,
+                                    rating: testimonial.rating,
+                                    clientImage: testimonial.client_image
+                                });
+                                migratedCount++;
+                            } catch (error) {
+                                console.error(`Failed to migrate testimonial: ${testimonial.client_name}`, error);
+                            }
+                        }
+                        
+                        // Show migration completion message
+                        if (migratedCount > 0) {
+                            const alert = document.getElementById('testimonialsAlert');
+                            if (alert) {
+                                alert.textContent = `✅ Successfully migrated ${migratedCount} testimonials to Firebase!`;
+                                alert.style.display = 'block';
+                                alert.className = 'alert alert-success';
+                                
+                                // Hide migration message after 3 seconds
+                                setTimeout(() => {
+                                    alert.style.display = 'none';
+                                }, 3000);
+                            }
+                        }
+                        
+                        // Clear localStorage after successful migration
+                        localStorage.removeItem('testimonials');
+                        
+                        // Reload from Firebase to get the migrated data
+                        const result = await firebaseDB.getTestimonials();
+                        if (result.success) {
+                            testimonials = result.data;
+                        }
+                    }
+                }
+                
+                const table = document.getElementById('testimonialsTable');
+                // Clear existing rows (except header)
+                while (table.rows.length > 1) {
+                    table.deleteRow(1);
+                }
+                
+                // Add testimonials to table
+                testimonials.forEach(testimonial => {
+                    const newRow = table.insertRow();
+                    newRow.setAttribute('data-testimonial-id', testimonial.id);
+                    
+                    // Generate star rating display
+                    const stars = '⭐'.repeat(testimonial.rating || 5);
+                    
+                    // Handle different data structures (Firebase vs localStorage)
+                    const clientName = testimonial.clientName || testimonial.client_name || 'Unknown';
+                    const testimonialText = testimonial.testimonialText || testimonial.testimonial_text || '';
+                    
+                    newRow.innerHTML = `
+                        <td>${clientName}</td>
+                        <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
+                        <td>${stars}</td>
+                        <td class="table-actions">
+                            <button class="btn-delete" onclick="deleteTestimonial('${testimonial.id}')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </td>
+                    `;
+                });
             } catch (error) {
                 console.error('Error loading testimonials:', error);
+                const alert = document.getElementById('testimonialsAlert');
+                alert.textContent = '❌ Error loading testimonials: ' + error.message;
+                alert.style.display = 'block';
+                alert.className = 'alert alert-error';
             }
         }
 
@@ -1712,8 +2061,6 @@
         
         // Simple file selection handler
         function handleFileSelect(files) {
-            console.log('Files selected:', files.length);
-            
             const fileListContainer = document.getElementById('fileListContainer');
             const uploadButton = document.getElementById('uploadButton');
             
@@ -1741,8 +2088,6 @@
                 fileListContainer.innerHTML = filePreviewHTML;
                 fileListContainer.style.display = 'block';
                 uploadButton.style.display = 'inline-block';
-                
-                console.log('✅ File preview updated');
             }
         }
         
@@ -1793,11 +2138,8 @@
 
         // Upload Photos Function with Cloudinary
         async function uploadPhotos() {
-            console.log('🚀 Starting photo upload process...');
             const category = document.getElementById('photoCategory').value;
             const files = document.getElementById('photoUpload').files;
-            
-            console.log('📁 Upload details:', { category, fileCount: files.length });
             
             if (!category) {
                 alert('Please select a category first!');
@@ -1837,17 +2179,12 @@
             // Process each file
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                console.log(`📤 Processing file ${i + 1}/${files.length}:`, file.name);
                 
                 try {
-                    console.log('🌤️ Uploading to Cloudinary...');
                     // Upload to Cloudinary
                     const result = await uploadToCloudinary(file, category);
                     
-                    console.log('📋 Cloudinary result:', result);
-                    
                     if (result.success) {
-                        console.log('✅ Upload successful, saving to localStorage...');
                         // Add photo to grid with Cloudinary URL
                         const photoItem = document.createElement('div');
                         photoItem.className = 'photo-item';
@@ -1867,8 +2204,6 @@
                             width: result.width,
                             height: result.height
                         });
-                        
-                        console.log('💾 Photo data saved:', photoData);
                         
                         // Create photo item with edit and main photo controls
                         photoItem.innerHTML = `
@@ -1908,10 +2243,6 @@
             // Show success message
             if (successCount > 0) {
                 photoAlert.textContent = `${successCount} photo(s) uploaded successfully to ${category} category!`;
-                // Verify localStorage contents
-                const savedPhotos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                console.log('🔍 Verification - Total photos in localStorage after upload:', savedPhotos.length);
-                console.log('🔍 Verification - localStorage contents:', savedPhotos);
             }
             if (failCount > 0) {
                 photoAlert.textContent += ` ${failCount} upload(s) failed.`;
@@ -1955,7 +2286,6 @@
                 formData.append('tags', `${category.toLowerCase()},portfolio`);
                 
                 // Upload to Cloudinary
-                console.log('🌤️ Sending to Cloudinary...');
                 const response = await fetch(UPLOAD_URL, {
                     method: 'POST',
                     body: formData
@@ -1967,10 +2297,6 @@
                 }
                 
                 const data = await response.json();
-                console.log('Cloudinary upload successful:', data.secure_url);
-                
-                // saveImage function disabled - using savePhotoToSupabase instead
-                console.log('Skipping saveImage - using savePhotoToSupabase instead');
                 
                 return {
                     success: true,
@@ -1992,8 +2318,6 @@
         // Save photo info to Supabase (replaces localStorage)
         async function savePhotoToSupabase(photoData) {
             try {
-                console.log('💾 Saving photo to Supabase:', photoData);
-                
                 // Ensure photoData has required fields
                 const fullPhotoData = {
                     isMain: false,  // Default to not main
@@ -2028,7 +2352,6 @@
                 if (response.ok) {
                     const saved = await response.json();
                     const savedPhoto = Array.isArray(saved) ? saved[0] : saved;
-                    console.log('💾 Added new photo to Supabase:', savedPhoto);
                     
                     // Also update localStorage for offline fallback
                     const existingPhotos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
@@ -2193,11 +2516,10 @@
                         });
                         
                         if (response.ok) {
-                            console.log('✅ Photo deleted from Supabase:', cloudinaryId);
                             
                             // Also update localStorage
                             let photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                            photos = photos.filter(photo => photo.public_id !== cloudinaryId);
+                            photos = photos.filter(p => p.public_id !== cloudinaryId);
                             localStorage.setItem('cloudinaryPhotos', JSON.stringify(photos));
                         } else {
                             throw new Error('Failed to delete from Supabase');
@@ -2426,7 +2748,6 @@
             // Load from localStorage first (shows immediately)
             try {
                 photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
-                console.log('Loaded photos from localStorage:', photos.length);
                 
                 // Display localStorage photos immediately
                 displayPortfolioPhotos(photos);
@@ -2442,7 +2763,6 @@
                     
                     if (response.ok) {
                         const supabasePhotos = await response.json();
-                        console.log('Loaded photos from Supabase:', supabasePhotos.length);
                         
                         // Merge Supabase photos with localStorage (avoid duplicates)
                         const mergedPhotos = [...photos];
@@ -2593,7 +2913,6 @@
                 }
                 
                 // Load thumbnails from Supabase
-                console.log('📥 Loading thumbnails from Supabase...');
                 const thumbnails = await loadThumbnailsFromSupabase();
                 
                 // Define categories
@@ -2647,8 +2966,6 @@
                     });
                 });
                 
-                console.log('✅ Category thumbnails loaded successfully from Supabase');
-                
             } catch (error) {
                 console.error('❌ Error loading category thumbnails:', error);
                 if (thumbnailsGrid) {
@@ -2674,10 +2991,7 @@
             const file = event.target.files[0];
             const category = event.target.getAttribute('data-category');
             
-            console.log('📸 Thumbnail upload started:', { category, fileName: file?.name, fileSize: file?.size });
-            
             if (!file || !category) {
-                console.error('❌ No file or category specified');
                 return;
             }
             
@@ -2697,8 +3011,6 @@
                 formData.append('folder', 'portfolio/thumbnails');
                 formData.append('tags', `thumbnail,${category}`);
                 
-                console.log('🚀 Uploading to Cloudinary...');
-                
                 const response = await fetch('https://api.cloudinary.com/v1_1/dnpfsfvfv/image/upload', {
                     method: 'POST',
                     body: formData
@@ -2712,8 +3024,6 @@
                 const result = await response.json();
                 const imageUrl = result.secure_url;
                 
-                console.log('✅ Cloudinary upload successful:', imageUrl);
-                
                 // Update the preview
                 const previewImg = document.getElementById(`thumbnail-${category}`);
                 if (previewImg) {
@@ -2726,12 +3036,7 @@
                 }
                 
                 // Save to Supabase
-                console.log('💾 Saving to Supabase...');
                 await saveThumbnailToSupabase(category, imageUrl);
-                console.log('✅ Saved to Supabase successfully');
-                
-                // Update the UI
-                console.log('🔄 Updating UI...');
                 const thumbnailCards = document.querySelectorAll('.thumbnail-card');
                 thumbnailCards.forEach(card => {
                     if (card.querySelector('h3').textContent.includes(category)) {
@@ -2741,7 +3046,6 @@
                 });
                 
                 showAlert(`✅ ${category} thumbnail updated successfully!`, 'success', 'thumbnailsAlert');
-                console.log('🎉 Thumbnail upload completed successfully');
                 
             } catch (error) {
                 console.error('❌ Upload error:', error);
@@ -2789,8 +3093,6 @@
                         if (!updateResponse.ok) {
                             throw new Error('Failed to update thumbnail in Supabase');
                         }
-                        
-                        console.log('✅ Thumbnail updated in Supabase');
                     } else {
                         // Insert new thumbnail
                         const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails`, {
@@ -2811,14 +3113,12 @@
                         if (!insertResponse.ok) {
                             throw new Error('Failed to save thumbnail to Supabase');
                         }
-                        
-                        console.log('✅ Thumbnail saved to Supabase');
                     }
                 } else {
                     throw new Error('Failed to check existing thumbnails');
                 }
             } catch (error) {
-                console.error('❌ Supabase error:', error);
+                console.error('Supabase error:', error);
                 throw error;
             }
         }
@@ -2842,11 +3142,9 @@
                 }
                 
                 const thumbnails = await response.json();
-                console.log('✅ Loaded thumbnails from Supabase:', thumbnails);
-                
                 return thumbnails;
             } catch (error) {
-                console.error('❌ Error loading thumbnails from Supabase:', error);
+                console.error('Error loading thumbnails from Supabase:', error);
                 return [];
             }
         }
@@ -2878,8 +3176,7 @@
         // Update the thumbnail in index.html
         function updateIndexThumbnail(category, thumbnailData) {
             // This function would be called after a successful thumbnail update
-            // to update the UI in index.html
-            console.log(`Thumbnail for ${category} updated successfully!`);
+            // to update UI in index.html
             
             // In a real implementation, you might want to update the UI here
             // or trigger a refresh of the portfolio section
@@ -2910,23 +3207,10 @@
         document.addEventListener('DOMContentLoaded', async function() {
             try {
                 // Initialize Firebase if available
-                if (typeof firebase !== 'undefined') {
-                    console.log('Firebase is available');
-                    
-                    // Initialize Firebase using the function from firebase-db.js
-                    if (typeof initializeFirebase === 'function') {
-                        initializeFirebase();
-                    }
-                    
-                    // Get Firebase services
-                    if (typeof firebase.storage !== 'undefined') {
-                        window.firebaseStorage = firebase.storage();
-                    }
-                    if (typeof firebase.firestore !== 'undefined') {
-                        window.firebaseDB = firebase.firestore();
-                    }
-                    
-                    console.log('Firebase services initialized');
+                if (typeof firebase !== 'undefined' && typeof firebaseDB !== 'undefined') {
+                    // Firebase available
+                } else {
+                    // Firebase not available
                 }
                 
                 // Load category thumbnails
@@ -2939,16 +3223,12 @@
                 // Load portfolio items
                 await loadPortfolioPhotos();
                 
-                // Load testimonials from Firebase
-                if (typeof loadTestimonialsFromFirebase === 'function') {
-                    loadTestimonialsFromFirebase();
+                // Load testimonials
+                if (typeof loadTestimonials === 'function') {
+                    await loadTestimonials();
                 }
                 
-                console.log('✅ Admin panel initialized');
-                console.log('✅ Firebase ready for: Testimonials, About, Contact');
-                console.log('✅ Supabase ready for: Photos, Thumbnails');
-                console.log('✅ Cloudinary ready for: Image uploads');
-            } catch (error) {
+                            } catch (error) {
                 console.error('Error initializing admin panel:', error);
             }
         });
@@ -2964,6 +3244,9 @@
     
     <!-- Firebase Database Helper (for other features) -->
     <script src="firebase-db.js"></script>
+    
+    <!-- Cloudinary Upload Helper -->
+    <script src="cloudinary-upload.js"></script>
     
     <!-- Additional helper functions -->
     <script>
@@ -3327,7 +3610,6 @@
                 });
                 
                 updatePhotoCount(photos.length);
-                console.log(`✅ Loaded ${photos.length} photos successfully`);
                 
             } catch (error) {
                 console.error('Error loading photos:', error);
@@ -3348,7 +3630,6 @@
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Photo set as main successfully');
                     window.loadPhotosDirect();
                 }
             } catch (error) {
@@ -3373,8 +3654,10 @@
                     });
                     
                     if (response.ok) {
-                        console.log('✅ Photo deleted successfully');
+                    } else {
+                        throw new Error('Failed to delete photo');
                     }
+                    
                 } catch (error) {
                     console.error('Error deleting photo:', error);
                 }
@@ -3452,7 +3735,6 @@
                 });
                 
                 if (response.ok) {
-                    console.log('✅ Photo updated successfully');
                     window.closeEdit();
                     window.loadPhotosDirect();
                 } else {
@@ -3480,8 +3762,6 @@
         window.addEventListener('load', function() {
             setTimeout(window.loadPhotosDirect, 500);
         });
-        
-        console.log('Permanent photo management fix loaded!');
     </script>
 </body>
 </html>

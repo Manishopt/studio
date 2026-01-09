@@ -2,45 +2,55 @@
 const CONFIG = {
     CLOUD_NAME: 'dnpfsfvfv',
     UPLOAD_PRESET: 'unsigned_upload',
-    MAX_FILE_SIZE: 5 * 1024 * 1024, // 5MB
+    MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB - matching admin panel limit
     ALLOWED_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 };
 
-// DOM Elements
-const fileInput = document.getElementById('file-input');
-const previewContainer = document.getElementById('preview-container');
-const uploadButton = document.getElementById('upload-button');
-const progressBar = document.getElementById('progress-bar');
-const progressText = document.getElementById('progress-text');
-const progressContainer = document.querySelector('.progress');
-const gallery = document.getElementById('gallery');
-const dropZone = document.getElementById('dropZone');
+// DOM Elements - wrapped in function to avoid conflicts
+function getCloudinaryElements() {
+    return {
+        fileInput: document.getElementById('file-input'),
+        previewContainer: document.getElementById('preview-container'),
+        uploadButton: document.getElementById('upload-button'),
+        progressBar: document.getElementById('progress-bar'),
+        progressText: document.getElementById('progress-text'),
+        progressContainer: document.querySelector('.progress'),
+        gallery: document.getElementById('gallery'),
+        dropZone: document.getElementById('dropZone')
+    };
+}
 
 // Initialize
 function init() {
-    fileInput.addEventListener('change', handleFileSelect);
-    uploadButton.addEventListener('click', handleUpload);
+    const elements = getCloudinaryElements();
+    
+    if (!elements.fileInput || !elements.uploadButton || !elements.dropZone) {
+        return;
+    }
+    
+    elements.fileInput.addEventListener('change', handleFileSelect);
+    elements.uploadButton.addEventListener('click', handleUpload);
     
     // Drag and drop functionality
-    dropZone.addEventListener('dragover', (e) => {
+    elements.dropZone.addEventListener('dragover', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#4CAF50';
-        dropZone.style.background = '#f0f9f0';
+        elements.dropZone.style.borderColor = '#4CAF50';
+        elements.dropZone.style.background = '#f0f9f0';
     });
     
-    dropZone.addEventListener('dragleave', (e) => {
+    elements.dropZone.addEventListener('dragleave', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#ccc';
-        dropZone.style.background = 'transparent';
+        elements.dropZone.style.borderColor = '#ccc';
+        elements.dropZone.style.background = 'transparent';
     });
     
-    dropZone.addEventListener('drop', (e) => {
+    elements.dropZone.addEventListener('drop', (e) => {
         e.preventDefault();
-        dropZone.style.borderColor = '#ccc';
-        dropZone.style.background = 'transparent';
+        elements.dropZone.style.borderColor = '#ccc';
+        elements.dropZone.style.background = 'transparent';
         
         const files = e.dataTransfer.files;
-        fileInput.files = files;
+        elements.fileInput.files = files;
         handleFileSelect({ target: { files } });
     });
     
@@ -49,11 +59,12 @@ function init() {
 
 // Handle file selection
 function handleFileSelect(event) {
+    const elements = getCloudinaryElements();
     const files = Array.from(event.target.files);
-    previewContainer.innerHTML = '';
+    elements.previewContainer.innerHTML = '';
     
     if (files.length === 0) {
-        uploadButton.style.display = 'none';
+        elements.uploadButton.style.display = 'none';
         return;
     }
     
@@ -64,11 +75,11 @@ function handleFileSelect(event) {
         }
         
         const preview = createPreviewElement(file, index);
-        previewContainer.appendChild(preview);
+        elements.previewContainer.appendChild(preview);
     });
     
-    const validFiles = previewContainer.querySelectorAll('.preview-item').length;
-    uploadButton.style.display = validFiles > 0 ? 'block' : 'none';
+    const validFiles = elements.previewContainer.querySelectorAll('.preview-item').length;
+    elements.uploadButton.style.display = validFiles > 0 ? 'block' : 'none';
 }
 
 // Create preview element
@@ -105,7 +116,8 @@ function createPreviewElement(file, index) {
 
 // Upload files to Cloudinary
 async function handleUpload() {
-    const files = Array.from(fileInput.files).filter((_, i) => 
+    const elements = getCloudinaryElements();
+    const files = Array.from(elements.fileInput.files).filter((_, i) => 
         document.querySelector(`.preview-item[data-index="${i}"]`)
     );
     
@@ -114,8 +126,8 @@ async function handleUpload() {
         return;
     }
     
-    uploadButton.disabled = true;
-    progressContainer.style.display = 'block';
+    elements.uploadButton.disabled = true;
+    elements.progressContainer.style.display = 'block';
     const results = [];
     
     for (let i = 0; i < files.length; i++) {
@@ -141,11 +153,11 @@ async function handleUpload() {
     updateProgress(`Upload complete! ${results.length} file(s) uploaded successfully.`, 100);
     
     setTimeout(() => {
-        uploadButton.disabled = false;
-        fileInput.value = '';
-        previewContainer.innerHTML = '';
-        uploadButton.style.display = 'none';
-        progressContainer.style.display = 'none';
+        elements.uploadButton.disabled = false;
+        elements.fileInput.value = '';
+        elements.previewContainer.innerHTML = '';
+        elements.uploadButton.style.display = 'none';
+        elements.progressContainer.style.display = 'none';
         updateProgress('Ready to upload', 0);
     }, 2000);
     
@@ -237,23 +249,32 @@ function formatFileSize(bytes) {
 
 // Update progress UI
 function updateProgress(message, percent) {
-    progressText.textContent = message;
-    progressBar.style.width = `${percent}%`;
-    progressBar.setAttribute('aria-valuenow', percent);
+    const elements = getCloudinaryElements();
+    if (elements.progressText) {
+        elements.progressText.textContent = message;
+    }
+    if (elements.progressBar) {
+        elements.progressBar.style.width = `${percent}%`;
+        elements.progressBar.setAttribute('aria-valuenow', percent);
+    }
 }
 
 // Remove preview
 function removePreview(index) {
+    const elements = getCloudinaryElements();
     const preview = document.querySelector(`.preview-item[data-index="${index}"]`);
     if (preview) preview.remove();
     
-    if (previewContainer.children.length === 0) {
-        uploadButton.style.display = 'none';
+    if (elements.previewContainer && elements.previewContainer.children.length === 0) {
+        elements.uploadButton.style.display = 'none';
     }
 }
 
 // Add to gallery
 function addToGallery(result) {
+    const elements = getCloudinaryElements();
+    if (!elements.gallery) return;
+    
     const galleryItem = document.createElement('div');
     galleryItem.className = 'gallery-item';
     
@@ -278,7 +299,7 @@ function addToGallery(result) {
     galleryItem.appendChild(deleteBtn);
     galleryItem.appendChild(info);
     
-    gallery.insertBefore(galleryItem, gallery.firstChild);
+    elements.gallery.insertBefore(galleryItem, elements.gallery.firstChild);
 }
 
 // Delete from gallery
@@ -303,8 +324,90 @@ function removeFromLocalStorage(publicId) {
 }
 
 function loadGalleryFromLocalStorage() {
+    const elements = getCloudinaryElements();
+    if (!elements.gallery) return;
+    
     const uploads = JSON.parse(localStorage.getItem('cloudinaryUploads') || '[]');
     uploads.forEach(result => addToGallery(result));
+}
+
+// Upload image to Cloudinary - General purpose function
+async function uploadImageToCloudinary(file, folder = 'general') {
+    console.log('🚀 uploadImageToCloudinary called with:', file.name, folder);
+    
+    return new Promise((resolve, reject) => {
+        // Validate file
+        if (!file) {
+            console.error('❌ No file provided');
+            reject({ success: false, error: 'No file provided' });
+            return;
+        }
+
+        // Check file type
+        if (!CONFIG.ALLOWED_TYPES.includes(file.type)) {
+            console.error('❌ Invalid file type:', file.type);
+            reject({ success: false, error: 'Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed.' });
+            return;
+        }
+
+        // Check file size
+        if (file.size > CONFIG.MAX_FILE_SIZE) {
+            console.error('❌ File too large:', file.size);
+            reject({ success: false, error: 'File size exceeds 10MB limit.' });
+            return;
+        }
+
+        console.log('✅ File validation passed, starting upload...');
+
+        // Create FormData
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CONFIG.UPLOAD_PRESET);
+        formData.append('folder', folder);
+
+        console.log('📤 FormData created:', {
+            file: file.name,
+            upload_preset: CONFIG.UPLOAD_PRESET,
+            folder: folder
+        });
+
+        // Create XMLHttpRequest
+        const xhr = new XMLHttpRequest();
+        
+        xhr.open('POST', `https://api.cloudinary.com/v1_1/${CONFIG.CLOUD_NAME}/image/upload`, true);
+        console.log('🌐 Opening request to:', `https://api.cloudinary.com/v1_1/${CONFIG.CLOUD_NAME}/image/upload`);
+        
+        xhr.onload = function() {
+            console.log('📡 Upload completed with status:', xhr.status);
+            if (xhr.status === 200) {
+                const result = JSON.parse(xhr.responseText);
+                console.log('✅ Upload successful:', result);
+                resolve({ 
+                    success: true, 
+                    url: result.secure_url,
+                    public_id: result.public_id,
+                    original_filename: result.original_filename || file.name
+                });
+            } else {
+                console.error('❌ Upload failed with status:', xhr.status, xhr.responseText);
+                reject({ 
+                    success: false, 
+                    error: 'Upload failed: ' + xhr.statusText 
+                });
+            }
+        };
+        
+        xhr.onerror = function() {
+            console.error('❌ Network error during upload');
+            reject({ 
+                success: false, 
+                error: 'Network error during upload' 
+            });
+        };
+        
+        xhr.send(formData);
+        console.log('📤 Request sent, waiting for response...');
+    });
 }
 
 // Initialize when DOM is loaded

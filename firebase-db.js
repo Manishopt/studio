@@ -23,7 +23,6 @@ function initializeFirebase() {
         firebase.initializeApp(firebaseConfig);
         db = firebase.firestore();
         initialized = true;
-        console.log('✅ Firebase initialized successfully');
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
     }
@@ -174,8 +173,8 @@ async function deleteService(serviceId) {
 // ==================== TESTIMONIALS FUNCTIONS ====================
 
 /**
- * Add a new testimonial
- * @param {Object} testimonialData - { clientName, testimonialText, rating }
+ * Add a new testimonial with image upload support
+ * @param {Object} testimonialData - { clientName, testimonialText, rating, clientImage }
  */
 async function addTestimonial(testimonialData) {
     try {
@@ -184,6 +183,7 @@ async function addTestimonial(testimonialData) {
             clientName: testimonialData.clientName,
             testimonialText: testimonialData.testimonialText,
             rating: testimonialData.rating || 5,
+            clientImage: testimonialData.clientImage || null,
             createdAt: firebase.firestore.FieldValue.serverTimestamp()
         });
         console.log('✅ Testimonial added with ID:', docRef.id);
@@ -209,7 +209,6 @@ async function getTestimonials() {
             testimonials.push({ id: doc.id, ...doc.data() });
         });
         
-        console.log(`✅ Retrieved ${testimonials.length} testimonials`);
         return { success: true, data: testimonials };
     } catch (error) {
         console.error('❌ Error getting testimonials:', error);
@@ -230,6 +229,49 @@ async function deleteTestimonial(testimonialId) {
     } catch (error) {
         console.error('❌ Error deleting testimonial:', error);
         return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Update a testimonial
+ * @param {string} testimonialId - Document ID
+ * @param {Object} updateData - Data to update
+ */
+async function updateTestimonial(testimonialId, updateData) {
+    try {
+        initializeFirebase();
+        await db.collection('testimonials').doc(testimonialId).update(updateData);
+        console.log('✅ Testimonial updated:', testimonialId);
+        return { success: true };
+    } catch (error) {
+        console.error('❌ Error updating testimonial:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Upload image to Firebase Storage
+ * @param {File} file - Image file to upload
+ * @param {string} fileName - Custom file name
+ * @returns {Promise<string>} Download URL
+ */
+async function uploadTestimonialImage(file, fileName) {
+    try {
+        initializeFirebase();
+        const storage = firebase.storage();
+        const storageRef = storage.ref();
+        const imageRef = storageRef.child(`testimonials/${fileName}`);
+        
+        // Upload file
+        const snapshot = await imageRef.put(file);
+        
+        // Get download URL
+        const downloadURL = await snapshot.ref.getDownloadURL();
+        console.log('✅ Image uploaded to Firebase Storage:', downloadURL);
+        return downloadURL;
+    } catch (error) {
+        console.error('❌ Error uploading image to Firebase Storage:', error);
+        throw error;
     }
 }
 
@@ -329,6 +371,8 @@ if (typeof window !== 'undefined') {
         addTestimonial,
         getTestimonials,
         deleteTestimonial,
+        updateTestimonial,
+        uploadTestimonialImage,
         
         // About
         updateAboutInfo,

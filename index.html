@@ -593,7 +593,140 @@
             text-align: center;
         }
 
-        /* ===== TESTIMONIALS ===== */
+        /* ===== TESTIMONIALS - Minimal Editorial Layout ===== */
+        .testimonials-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 40px;
+            margin: 40px 0;
+            background: white;
+        }
+
+        .testimonial-item {
+            text-align: center;
+            padding: 30px 20px;
+            background: white;
+            border: none;
+            box-shadow: none;
+            border-radius: 0;
+        }
+
+        .testimonial-image {
+            width: 240px;
+            height: 240px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 30px;
+            border: 2px solid #f8f8f8;
+        }
+
+        .testimonial-text {
+            color: #333;
+            line-height: 1.6;
+            font-style: italic;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            font-family: 'Georgia', serif;
+            min-height: 80px;
+        }
+
+        .testimonial-name {
+            color: #222;
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .testimonial-placeholder {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            color: #666;
+            font-family: 'Georgia', serif;
+            font-style: italic;
+        }
+
+        .testimonial-placeholder h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 400;
+            font-family: 'Georgia', serif;
+        }
+
+        .testimonial-placeholder p {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Responsive testimonials */
+        @media (max-width: 1024px) {
+            .testimonials-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 30px;
+            }
+            
+            .testimonial-image {
+                width: 180px;
+                height: 180px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .testimonials-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 25px;
+                margin: 30px 0;
+            }
+            
+            .testimonial-item {
+                padding: 25px 15px;
+            }
+            
+            .testimonial-image {
+                width: 140px;
+                height: 140px;
+                margin-bottom: 20px;
+            }
+            
+            .testimonial-text {
+                font-size: 0.9rem;
+                margin-bottom: 12px;
+                min-height: 60px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .testimonials-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                margin: 20px 0;
+            }
+            
+            .testimonial-item {
+                padding: 20px 10px;
+            }
+            
+            .testimonial-image {
+                width: 100px;
+                height: 100px;
+                margin-bottom: 15px;
+            }
+            
+            .testimonial-text {
+                font-size: 0.85rem;
+                margin-bottom: 10px;
+                min-height: 50px;
+            }
+            
+            .testimonial-name {
+                font-size: 0.9rem;
+            }
+        }
+
         blockquote {
             font-style: italic;
             color: var(--text-dark);
@@ -2109,7 +2242,20 @@
             </a>
         </div>
     </section>
- 
+
+    <!-- Client Testimonials Section -->
+    <section id="client-testimonials">
+        <h2>CLIENT TESTIMONIALS</h2>
+        
+        <div class="testimonials-grid" id="testimonialsContainer">
+            <!-- Testimonials will be dynamically loaded from Firebase -->
+            <div class="testimonial-placeholder">
+                <h3>No Testimonials Yet</h3>
+                <p>Client testimonials will appear here once added from the admin panel.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Transparent Contact Form Section -->
     <section class="transparent-contact-section">
         <div class="transparent-form-container">
@@ -2253,6 +2399,23 @@
     </a>
 
     <!-- External Scripts -->
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    
+    <!-- Firebase Database Helper -->
+    <script src="firebase-db.js"></script>
+    
+    <!-- Supabase Configuration -->
+    <script>
+        const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1anV1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
+    </script>
+    
+    <!-- Cloudinary Configuration -->
+    <script src="cloudinary-upload.js"></script>
+    
     <!-- Custom Scripts -->
     <script>
 // Background Photo Carousel
@@ -2392,6 +2555,12 @@ document.addEventListener('visibilitychange', function() {
             
             // Load portfolio items from Supabase
             await loadPortfolioItems();
+            
+            // Load testimonials from Firebase
+            await loadTestimonials();
+            
+            // Start auto-refresh for real-time updates
+            startTestimonialAutoRefresh();
             
             // Set up mobile scroll detection for portfolio cards
             setupPortfolioScrollDetection();
@@ -2643,6 +2812,92 @@ document.addEventListener('visibilitychange', function() {
                 console.error('❌ Error loading thumbnails from Supabase:', error);
                 return []; // Return empty array on error
             }
+        }
+
+        // Load testimonials from Firebase first, then fallback to localStorage
+        async function loadTestimonials() {
+            try {
+                const container = document.getElementById('testimonialsContainer');
+                if (!container) return;
+
+                let testimonials = [];
+                
+                // Try Firebase first
+                if (typeof firebaseDB !== 'undefined' && firebaseDB.getTestimonials) {
+                    try {
+                        const result = await firebaseDB.getTestimonials();
+                        if (result.success) {
+                            testimonials = result.data;
+                        }
+                    } catch (firebaseError) {
+                        console.warn('⚠️ Firebase loading failed, trying localStorage:', firebaseError.message);
+                    }
+                }
+                
+                // Fallback to localStorage if Firebase failed or returned no data
+                if (testimonials.length === 0) {
+                    testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
+                }
+                
+                if (testimonials.length > 0) {
+                    // Clear placeholder
+                    container.innerHTML = '';
+                    
+                    // Create testimonial cards
+                    testimonials.forEach(testimonial => {
+                        const card = document.createElement('div');
+                        card.className = 'testimonial-card';
+                        
+                        // Handle different data structures (Firebase vs localStorage)
+                        const clientName = testimonial.clientName || testimonial.client_name || 'Anonymous';
+                        const testimonialText = testimonial.testimonialText || testimonial.testimonial_text || '';
+                        const clientImage = testimonial.clientImage || testimonial.client_image;
+                        const rating = testimonial.rating || 5;
+                        
+                        // Generate star rating display (same as admin panel)
+                        const stars = '⭐'.repeat(rating);
+                        
+                        // Use default avatar if no image provided (same size as admin panel)
+                        const imageUrl = clientImage || `https://ui-avatars.com/api/?name=${encodeURIComponent(clientName)}&background=ffb6c1&color=fff&size=100`;
+                        
+                        card.innerHTML = `
+                            <div class="testimonial-item">
+                                <img src="${imageUrl}" alt="${clientName}" class="testimonial-image" onerror="this.src='https://ui-avatars.com/api/?name=${encodeURIComponent(clientName)}&background=ffb6c1&color=fff&size=100'">
+                                <div class="testimonial-text">${testimonialText}</div>
+                                <div class="testimonial-name">${clientName}</div>
+                            </div>
+                        `;
+                        
+                        container.appendChild(card);
+                    });
+                } else {
+                    // Show placeholder if no testimonials
+                    container.innerHTML = `
+                        <div class="testimonial-placeholder">
+                            <h3>No Testimonials Yet</h3>
+                            <p>Client testimonials will appear here once added from the admin panel.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                const container = document.getElementById('testimonialsContainer');
+                if (container) {
+                    container.innerHTML = `
+                        <div class="testimonial-placeholder">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Error Loading Testimonials</h3>
+                            <p>Please try refreshing the page or contact support.</p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Auto-refresh testimonials every 30 seconds for real-time updates
+        function startTestimonialAutoRefresh() {
+            setInterval(async () => {
+                await loadTestimonials();
+            }, 30000); // Refresh every 30 seconds
         }
 
         // Dynamic gallery: show uploaded images from Supabase (replaces localStorage)
