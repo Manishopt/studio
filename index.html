@@ -115,9 +115,24 @@
         [data-theme="dark"] .blog-post h3,
         [data-theme="dark"] .blog-post p,
         [data-theme="dark"] .testimonial-text,
+        [data-theme="dark"] .testimonial-item,
+        [data-theme="dark"] .testimonial-image,
+        [data-theme="dark"] .testimonial-name,
+        [data-theme="dark"] .testimonial-placeholder,
         [data-theme="dark"] .service-card p,
         [data-theme="dark"] .about-content p {
             color: var(--text-dark) !important;
+        }
+        
+        /* Dark theme backgrounds for testimonials */
+        [data-theme="dark"] .testimonial-item,
+        [data-theme="dark"] .testimonial-placeholder {
+            background: var(--bg-dark) !important;
+        }
+        
+        /* Dark theme border for testimonial images */
+        [data-theme="dark"] .testimonial-image {
+            border-color: var(--border-dark) !important;
         }
         
         /* Ensure links are visible in dark mode */
@@ -599,13 +614,12 @@
             grid-template-columns: repeat(4, 1fr);
             gap: 40px;
             margin: 40px 0;
-            background: white;
         }
 
         .testimonial-item {
             text-align: center;
             padding: 30px 20px;
-            background: white;
+            background: transparent;
             border: none;
             box-shadow: none;
             border-radius: 0;
@@ -643,7 +657,7 @@
             grid-column: 1 / -1;
             text-align: center;
             padding: 60px 20px;
-            background: white;
+            background: transparent;
             color: #666;
             font-family: 'Georgia', serif;
             font-style: italic;
