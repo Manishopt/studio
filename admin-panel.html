@@ -29,6 +29,11 @@
         const auth = firebase.auth();
         const db = firebase.firestore();
         
+        // Debug: Check if Firebase is properly initialized
+        console.log('🔍 Firebase initialized:', !!firebase.apps.length);
+        console.log('🔍 Auth available:', !!auth);
+        console.log('🔍 Firestore available:', !!db);
+        
         // Check authentication status
         auth.onAuthStateChanged((user) => {
             if (!user) {
@@ -1532,11 +1537,118 @@
             UPLOAD_PRESET: 'unsigned_upload'
         };
         
-        // Check if user is logged in
+        // Test function for debugging
+        function testDeleteFunction() {
+            console.log('🧪 Test delete function called');
+            
+            // Check if confirm function exists
+            if (typeof confirm !== 'function') {
+                document.getElementById('testResult').innerHTML = '❌ confirm() function not available';
+                return;
+            }
+            
+            // Get first testimonial ID from table
+            const table = document.getElementById('testimonialsTable');
+            const firstRow = table.rows[1]; // Skip header row
+            if (firstRow) {
+                const testimonialId = firstRow.getAttribute('data-testimonial-id');
+                console.log('🎯 Found testimonial ID to test:', testimonialId);
+                
+                // Test confirm dialog manually
+                const testConfirm = confirm('Test: Are you sure you want to delete this testimonial?');
+                console.log('🔍 Manual confirm test result:', testConfirm);
+                
+                if (testConfirm) {
+                    console.log('✅ Manual confirm worked, calling delete function...');
+                    deleteTestimonial(testimonialId);
+                } else {
+                    console.log('❌ Manual confirm cancelled');
+                }
+            } else {
+                document.getElementById('testResult').innerHTML = '❌ No testimonials found to test';
+            }
+        }
+        
+        // Test page elements
+        function testPageElements() {
+            console.log('🔧 Testing page elements...');
+            
+            // Test testimonials table
+            const table = document.getElementById('testimonialsTable');
+            if (table) {
+                console.log('✅ Testimonials table found');
+                console.log('📊 Table rows:', table.rows.length);
+            } else {
+                console.log('❌ Testimonials table NOT found');
+            }
+            
+            // Test testimonials alert
+            const alert = document.getElementById('testimonialsAlert');
+            if (alert) {
+                console.log('✅ Testimonials alert found');
+            } else {
+                console.log('❌ Testimonials alert NOT found');
+            }
+            
+            // Test form
+            const form = document.getElementById('testimonialForm');
+            if (form) {
+                console.log('✅ Testimonial form found');
+            } else {
+                console.log('❌ Testimonial form NOT found');
+            }
+            
+            document.getElementById('elementTestResult').innerHTML = '✅ Page elements test completed - check console';
+        }
+        
+        // Quick delete test
+        function quickDeleteTest() {
+            console.log('⚡ Quick delete test started');
+            
+            const table = document.getElementById('testimonialsTable');
+            const firstRow = table.rows[1]; // Skip header row
+            
+            if (firstRow) {
+                const testimonialId = firstRow.getAttribute('data-testimonial-id');
+                console.log('🎯 Quick delete - ID:', testimonialId);
+                
+                // Simple confirmation
+                if (confirm('Quick delete: Are you sure?')) {
+                    console.log('✅ Quick delete confirmed');
+                    
+                    // Direct Firebase call
+                    firebaseDB.deleteTestimonial(testimonialId).then(result => {
+                        console.log('📥 Quick delete result:', result);
+                        
+                        if (result.success) {
+                            firstRow.remove();
+                            console.log('🗑️ Row removed');
+                            
+                            // Show success
+                            const alert = document.getElementById('testimonialsAlert');
+                            alert.textContent = '✅ Testimonial deleted successfully!';
+                            alert.style.display = 'block';
+                            alert.className = 'alert alert-success';
+                            
+                            setTimeout(() => {
+                                alert.style.display = 'none';
+                            }, 3000);
+                        }
+                    }).catch(error => {
+                        console.error('❌ Quick delete error:', error);
+                    });
+                } else {
+                    console.log('❌ Quick delete cancelled');
+                }
+            } else {
+                document.getElementById('quickDeleteResult').innerHTML = '❌ No testimonials to delete';
+            }
+        }
+        
         if (!sessionStorage.getItem('adminLoggedIn')) {
             window.location.href = 'admin-login.html';
         }
-
+        
         // Mobile menu toggle
         const mobileMenuToggle = document.getElementById('mobileMenuToggle');
         const sidebar = document.getElementById('sidebar');
@@ -1745,6 +1857,7 @@
         const clientImageInput = document.getElementById('clientImage');
         const clientImagePreview = document.getElementById('clientImagePreview');
         const removeClientImageBtn = document.getElementById('removeClientImage');
+        let isSubmitting = false; // Prevent duplicate submissions
         
         // Image preview functionality
         clientImagePreview.addEventListener('click', () => {
@@ -1835,12 +1948,24 @@
         
         testimonialForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            console.log('🚀 Form submission started');
+            
+            // Prevent duplicate submissions
+            if (isSubmitting) {
+                console.log('⚠️ Form already submitting, preventing duplicate');
+                return;
+            }
             
             const clientName = document.getElementById('clientName').value;
             const testimonialText = document.getElementById('testimonialText').value;
             const rating = parseInt(document.getElementById('testimonialRating').value);
             const submitButton = e.target.querySelector('button[type="submit"]');
             const alert = document.getElementById('testimonialsAlert');
+            
+            console.log('📝 Form data:', { clientName, testimonialText, rating });
+            
+            // Set submitting flag
+            isSubmitting = true;
             
             // Disable button during submission
             if (submitButton) {
@@ -1852,6 +1977,8 @@
                 // Handle image upload if provided
                 let clientImageUrl = null;
                 const imageFile = clientImageInput.files[0];
+                
+                console.log('🖼️ Image file:', imageFile ? imageFile.name : 'No image');
                 
                 if (imageFile) {
                     // Show uploading message
@@ -1885,7 +2012,9 @@
                 
                 let result;
                 if (typeof firebaseDB !== 'undefined' && firebaseDB.addTestimonial) {
+                    console.log('🔥 Calling Firebase addTestimonial...');
                     result = await firebaseDB.addTestimonial(testimonialData);
+                    console.log('📥 Firebase result:', result);
                 } else {
                     // Fallback to localStorage if Firebase is not available
                     console.warn('⚠️ Firebase not available, using localStorage fallback');
@@ -1906,46 +2035,30 @@
                 }
                 
                 if (result.success) {
+                    console.log('✅ Success! Testimonial added to Firebase');
+                    
+                    // Add new row to table instantly
+                    addTestimonialRow(result.data || testimonialData, result.id);
+                    
                     // Show success message immediately
                     alert.textContent = '✅ Testimonial added successfully!';
                     alert.style.display = 'block';
                     alert.className = 'alert alert-success';
                     
-                    // Add to table
-                    const table = document.getElementById('testimonialsTable');
-                    const newRow = table.insertRow();
-                    newRow.setAttribute('data-testimonial-id', result.id || result.data?.id);
-                    
-                    // Generate star rating display
-                    const stars = '⭐'.repeat(rating);
-                    
-                    newRow.innerHTML = `
-                        <td>${clientName}</td>
-                        <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
-                        <td>${stars}</td>
-                        <td class="table-actions">
-                            <button class="btn-delete" onclick="deleteTestimonial('${result.id || result.data?.id}')">
-                                <i class="fas fa-trash"></i> Delete
-                            </button>
-                        </td>
-                    `;
-                    
                     // Reset form
                     testimonialForm.reset();
                     clientImagePreview.innerHTML = `
                         <i class="fas fa-user"></i>
-                        <span>Click to upload or drag & drop image here</span>
+                        <span>Click to upload client image</span>
                     `;
                     removeClientImageBtn.style.display = 'none';
                     
-                    // Reload testimonials to refresh list
-                    setTimeout(async () => {
-                        await loadTestimonials();
-                        // Hide success message after reload
-                        setTimeout(() => {
-                            alert.style.display = 'none';
-                        }, 2000);
-                    }, 1000);
+                    console.log('🔄 Form reset completed');
+                    
+                    // Show success message for 3 seconds
+                    setTimeout(() => {
+                        alert.style.display = 'none';
+                    }, 3000);
                 } else {
                     throw new Error(result.error || 'Failed to save testimonial');
                 }
@@ -1955,77 +2068,196 @@
                 alert.className = 'alert alert-error';
                 console.error('Error adding testimonial:', error);
             } finally {
-                // Re-enable button
+                // Re-enable button and reset submitting flag
                 if (submitButton) {
                     submitButton.disabled = false;
                     submitButton.innerHTML = '<i class="fas fa-plus"></i> Add Testimonial';
                 }
+                // Reset submitting flag to allow new submissions
+                isSubmitting = false;
             }
         });
         
-        // Delete testimonial (works with both Firebase and localStorage)
-        async function deleteTestimonial(testimonialId) {
-            if (!confirm('Are you sure you want to delete this testimonial?')) {
-                return;
-            }
+        // Function to instantly add a new testimonial row to the table
+        function addTestimonialRow(testimonialData, testimonialId) {
+            console.log('➕ Adding new testimonial row to table:', testimonialData);
             
-            try {
-                let result;
+            const table = document.getElementById('testimonialsTable');
+            const newRow = table.insertRow(0); // Insert at the top
+            newRow.setAttribute('data-testimonial-id', testimonialId);
+            
+            // Generate star rating display
+            const stars = '⭐'.repeat(testimonialData.rating || 5);
+            
+            // Handle different data structures
+            const clientName = testimonialData.clientName || testimonialData.client_name || 'Unknown';
+            const testimonialText = testimonialData.testimonialText || testimonialData.testimonial_text || '';
+            
+
+            newRow.setAttribute("data-testimonial-id", testimonialId);
+            newRow.innerHTML = `
+                <td>${clientName}</td>
+                <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
+                <td>${stars}</td>
+                <td class="table-actions">
+                    <button class="btn-delete" data-testimonial-id="${testimonialId}">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </td>
+            `;
+            
+            // Add fade-in animation
+            newRow.style.opacity = '0';
+            newRow.style.transform = 'translateY(-20px)';
+            newRow.style.transition = 'all 0.3s ease';
+            
+            setTimeout(() => {
+                newRow.style.opacity = '1';
+                newRow.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // Update testimonial count
+            updateTestimonialCount();
+            
+            console.log('✅ New testimonial row added successfully');
+        }
+        
+        // Global event listener for delete buttons using event delegation
+        document.addEventListener('click', async function(e) {
+            // Check if clicked element is a delete button
+            if (e.target.closest('.btn-delete')) {
+                e.preventDefault();
+                e.stopPropagation();
                 
-                // Try Firebase first
-                if (typeof firebaseDB !== 'undefined' && firebaseDB.deleteTestimonial) {
-                    result = await firebaseDB.deleteTestimonial(testimonialId);
-                } else {
-                    // Fallback to localStorage
-                    let testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
-                    testimonials = testimonials.filter(t => t.id !== testimonialId);
-                    localStorage.setItem('testimonials', JSON.stringify(testimonials));
-                    result = { success: true };
+                const deleteBtn = e.target.closest('.btn-delete');
+                const testimonialId = deleteBtn.getAttribute('data-testimonial-id');
+                const row = deleteBtn.closest('tr');
+                
+                if (!testimonialId || !row) {
+                    console.error('❌ Could not find testimonial ID or row');
+                    return;
                 }
                 
-                if (result.success) {
-                    // Remove from table
-                    const row = document.querySelector(`tr[data-testimonial-id="${testimonialId}"]`);
+                // Prevent multiple clicks on same button
+                if (deleteBtn.disabled) {
+                    console.log('⏸️ Delete already in progress, ignoring...');
+                    return;
+                }
+                
+                // Get client name for confirmation dialog
+                const clientName = row.cells[0].textContent || 'this testimonial';
+                
+                // Show confirmation dialog
+                const confirmDelete = confirm(`Are you sure you want to delete the testimonial from "${clientName}"?`);
+                
+                if (!confirmDelete) {
+                    console.log('❌ User cancelled deletion');
+                    return;
+                }
+                
+                // Disable button to prevent duplicate clicks
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Deleting...';
+                
+                console.log('✅ User confirmed deletion, proceeding with ID:', testimonialId);
+                
+                try {
+                    // Add visual feedback during deletion
+                    row.style.opacity = '0.5';
+                    row.style.transition = 'opacity 0.3s ease';
                     
-                    if (row) {
-                        row.remove();
+                    // Try Firebase first
+                    let result;
+                    if (typeof firebaseDB !== 'undefined' && firebaseDB.deleteTestimonial) {
+                        console.log('🔥 Calling Firebase deleteTestimonial...');
+                        result = await firebaseDB.deleteTestimonial(testimonialId);
+                        console.log('📥 Firebase delete result:', result);
+                    } else {
+                        // Fallback to localStorage
+                        console.log('⚠️ Using localStorage fallback for deletion');
+                        let testimonials = JSON.parse(localStorage.getItem('testimonials') || '[]');
+                        testimonials = testimonials.filter(t => t.id !== testimonialId);
+                        localStorage.setItem('testimonials', JSON.stringify(testimonials));
+                        result = { success: true };
                     }
                     
-                    // Show success message
-                    const alert = document.getElementById('testimonialsAlert');
-                    alert.textContent = '✅ Testimonial deleted successfully!';
-                    alert.style.display = 'block';
-                    alert.className = 'alert alert-success';
+                    if (result.success) {
+                        // Smooth row removal animation
+                        row.style.transition = 'all 0.3s ease';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateX(-20px)';
+                        
+                        // Remove row after animation
+                        setTimeout(() => {
+                            row.remove();
+                            console.log('🗑️ Row removed from table');
+                            
+                            // Update testimonial count
+                            updateTestimonialCount();
+                        }, 300);
+                        
+                        // Show success message
+                        const alert = document.getElementById('testimonialsAlert');
+                        alert.textContent = `✅ Testimonial from "${clientName}" deleted successfully!`;
+                        alert.style.display = 'block';
+                        alert.className = 'alert alert-success';
+                        
+                        // Hide message after 3 seconds
+                        setTimeout(() => {
+                            alert.style.display = 'none';
+                        }, 3000);
+                        
+                        console.log('✅ Testimonial deleted successfully');
+                    } else {
+                        throw new Error(result.error || 'Failed to delete testimonial');
+                    }
+                } catch (error) {
+                    // Restore row and button if deletion failed
+                    row.style.opacity = '1';
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerHTML = '<i class="fas fa-trash"></i> Delete';
                     
-                    // Hide message after 3 seconds
-                    setTimeout(() => {
-                        alert.style.display = 'none';
-                    }, 3000);
-                } else {
-                    throw new Error(result.error || 'Failed to delete testimonial');
+                    const alert = document.getElementById('testimonialsAlert');
+                    alert.textContent = '❌ Error deleting testimonial: ' + error.message;
+                    alert.style.display = 'block';
+                    alert.className = 'alert alert-error';
+                    console.error('Error deleting testimonial:', error);
                 }
-            } catch (error) {
-                const alert = document.getElementById('testimonialsAlert');
-                alert.textContent = '❌ Error deleting testimonial: ' + error.message;
-                alert.style.display = 'block';
-                alert.className = 'alert alert-error';
-                console.error('Error deleting testimonial:', error);
+            }
+        });
+
+        // Update testimonial count function
+        function updateTestimonialCount() {
+            const table = document.getElementById('testimonialsTable');
+            const rowCount = table.rows.length - 1; // Subtract header row
+            console.log(`📊 Updated testimonial count: ${rowCount}`);
+            
+            // Update dashboard count if exists
+            const dashboardCount = document.querySelector('.stat-details h3');
+            if (dashboardCount && dashboardCount.textContent.includes('6')) {
+                dashboardCount.textContent = rowCount;
             }
         }
         
         // Load testimonials (works with both Firebase and localStorage)
         async function loadTestimonials() {
+            console.log('🔄 Loading testimonials...');
             try {
                 let testimonials = [];
                 
                 // Try Firebase first
+                console.log('🔍 Checking Firebase availability...');
                 if (typeof firebaseDB !== 'undefined' && firebaseDB.getTestimonials) {
+                    console.log('✅ Firebase available, fetching testimonials...');
                     const result = await firebaseDB.getTestimonials();
                     if (result.success) {
                         testimonials = result.data;
+                        console.log(`✅ Retrieved ${testimonials.length} testimonials from Firebase`);
+                    } else {
+                        console.error('❌ Firebase error:', result.error);
                     }
                 } else {
-                    console.warn('Firebase not available, using localStorage fallback');
+                    console.warn('⚠️ Firebase not available, using localStorage fallback');
                 }
                 
                 // Fallback to localStorage if Firebase failed or returned no data
@@ -2088,6 +2320,8 @@
                     table.deleteRow(1);
                 }
                 
+                console.log(`📊 Displaying ${testimonials.length} testimonials in table`);
+                
                 // Add testimonials to table
                 testimonials.forEach(testimonial => {
                     const newRow = table.insertRow();
@@ -2105,7 +2339,7 @@
                         <td>${testimonialText.substring(0, 50)}${testimonialText.length > 50 ? '...' : ''}</td>
                         <td>${stars}</td>
                         <td class="table-actions">
-                            <button class="btn-delete" onclick="deleteTestimonial('${testimonial.id}')">
+                            <button class="btn-delete" data-testimonial-id="${testimonial.id}">
                                 <i class="fas fa-trash"></i> Delete
                             </button>
                         </td>
@@ -3392,9 +3626,15 @@
             try {
                 // Initialize Firebase if available
                 if (typeof firebase !== 'undefined' && typeof firebaseDB !== 'undefined') {
-                    // Firebase available
+                    console.log('🔍 Testing Firebase connection...');
+                    const connectionTest = await firebaseDB.testConnection();
+                    if (connectionTest.success) {
+                        console.log('✅ Firebase connection verified');
+                    } else {
+                        console.error('❌ Firebase connection failed:', connectionTest.error);
+                    }
                 } else {
-                    // Firebase not available
+                    console.warn('⚠️ Firebase not available');
                 }
                 
                 // Load category thumbnails
@@ -3428,9 +3668,38 @@
     
     <!-- Firebase Database Helper (for other features) -->
     <script src="firebase-db.js"></script>
+    <script>
+        console.log('🔍 firebase-db.js loaded successfully');
+    </script>
     
     <!-- Cloudinary Upload Helper -->
     <script src="cloudinary-upload.js"></script>
+    
+    <!-- Test if firebaseDB is available -->
+    <script>
+        console.log('🔍 Checking firebaseDB availability...');
+        console.log('firebaseDB available:', typeof firebaseDB !== 'undefined');
+        if (typeof firebaseDB !== 'undefined') {
+            console.log('firebaseDB methods:', Object.keys(firebaseDB));
+        } else {
+            console.error('❌ firebaseDB is not defined! Creating fallback...');
+            // Create a basic fallback object
+            window.firebaseDB = {
+                getTestimonials: async function() {
+                    console.log('Using fallback getTestimonials');
+                    return { success: false, error: 'Firebase not available' };
+                },
+                addTestimonial: async function() {
+                    console.log('Using fallback addTestimonial');
+                    return { success: false, error: 'Firebase not available' };
+                },
+                testConnection: async function() {
+                    console.log('Using fallback testConnection');
+                    return { success: false, error: 'Firebase not available' };
+                }
+            };
+        }
+    </script>
     
     <!-- Additional helper functions -->
     <script>

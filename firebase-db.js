@@ -1,28 +1,23 @@
 // Firebase Database Helper for Admin Panel Features
 // This file handles all Firebase Firestore operations
-
-// Firebase Configuration
-const firebaseConfig = {
-    apiKey: "AIzaSyD_oBr_xQZZyFKBeMS9Vqa_IgiUUCofrQY",
-    authDomain: "studio-66a62.firebaseapp.com",
-    projectId: "studio-66a62",
-    storageBucket: "studio-66a62.firebasestorage.app",
-    messagingSenderId: "472272986177",
-    appId: "1:472272986177:web:96823be1a135b00bb466c0"
-};
+// Note: firebaseConfig is already declared in admin-panel.html
 
 // Initialize Firebase
-let db;
 let initialized = false;
 
 function initializeFirebase() {
     if (initialized) return;
     
     try {
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        db = firebase.firestore();
-        initialized = true;
+        // Use the global db and auth from admin-panel.html
+        if (typeof db !== 'undefined' && typeof auth !== 'undefined') {
+            initialized = true;
+            console.log('✅ Firebase initialized successfully (using global db and auth)');
+        } else {
+            console.error('❌ Global db or auth not available');
+            console.log('db available:', typeof db !== 'undefined');
+            console.log('auth available:', typeof auth !== 'undefined');
+        }
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
     }
@@ -42,7 +37,7 @@ async function addPortfolioItem(portfolioData) {
             description: portfolioData.description || '',
             imageUrl: portfolioData.imageUrl,
             category: portfolioData.category || 'General',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date().toISOString()
         });
         console.log('✅ Portfolio item added with ID:', docRef.id);
         return { success: true, id: docRef.id };
@@ -104,7 +99,7 @@ async function addService(serviceData) {
             serviceName: serviceData.serviceName,
             description: serviceData.description || '',
             icon: serviceData.icon || 'fas fa-camera',
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date().toISOString()
         });
         console.log('✅ Service added with ID:', docRef.id);
         return { success: true, id: docRef.id };
@@ -179,17 +174,26 @@ async function deleteService(serviceId) {
 async function addTestimonial(testimonialData) {
     try {
         initializeFirebase();
+        
+        // Debug authentication state
+        const currentUser = auth.currentUser;
+        console.log('🔍 Current user:', currentUser);
+        console.log('🔍 User UID:', currentUser ? currentUser.uid : 'No user');
+        console.log('🔍 User email:', currentUser ? currentUser.email : 'No user');
+        
         const docRef = await db.collection('testimonials').add({
             clientName: testimonialData.clientName,
             testimonialText: testimonialData.testimonialText,
             rating: testimonialData.rating || 5,
             clientImage: testimonialData.clientImage || null,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            createdAt: new Date().toISOString()
         });
         console.log('✅ Testimonial added with ID:', docRef.id);
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error adding testimonial:', error);
+        console.error('❌ Error code:', error.code);
+        console.error('❌ Error message:', error.message);
         return { success: false, error: error.message };
     }
 }
@@ -209,6 +213,7 @@ async function getTestimonials() {
             testimonials.push({ id: doc.id, ...doc.data() });
         });
         
+        console.log(`✅ Retrieved ${testimonials.length} testimonials`);
         return { success: true, data: testimonials };
     } catch (error) {
         console.error('❌ Error getting testimonials:', error);
@@ -380,6 +385,40 @@ if (typeof window !== 'undefined') {
         
         // Contact
         updateContactInfo,
-        getContactInfo
+        getContactInfo,
+        
+        // Test function
+        testConnection: async function() {
+            try {
+                initializeFirebase();
+                const testDoc = await db.collection('testimonials').limit(1).get();
+                console.log('✅ Firebase connection test successful');
+                return { success: true, message: 'Firebase connection working' };
+            } catch (error) {
+                console.error('❌ Firebase connection test failed:', error);
+                return { success: false, error: error.message };
+            }
+        },
+        
+        // Add test testimonial
+        addTestTestimonial: async function() {
+            const testData = {
+                clientName: 'Test Client',
+                testimonialText: 'This is a test testimonial to verify the functionality is working correctly.',
+                rating: 5,
+                clientImage: null
+            };
+            
+            console.log('🧪 Adding test testimonial...');
+            const result = await addTestimonial(testData);
+            if (result.success) {
+                console.log('✅ Test testimonial added successfully');
+            } else {
+                console.error('❌ Failed to add test testimonial:', result.error);
+            }
+            return result;
+        }
     };
+    
+    console.log('✅ firebaseDB object created and exported to window');
 }
