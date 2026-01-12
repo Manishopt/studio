@@ -14,8 +14,7 @@ function initializeFirebase() {
             initialized = true;
         } else {
             console.error('❌ Global db or auth not available');
-            console.log('db available:', typeof db !== 'undefined');
-            console.log('auth available:', typeof auth !== 'undefined');
+           
         }
     } catch (error) {
         console.error('❌ Firebase initialization error:', error);
@@ -38,7 +37,7 @@ async function addPortfolioItem(portfolioData) {
             category: portfolioData.category || 'General',
             createdAt: new Date().toISOString()
         });
-        console.log('✅ Portfolio item added with ID:', docRef.id);
+       
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error adding portfolio item:', error);
@@ -61,7 +60,7 @@ async function getPortfolioItems() {
             items.push({ id: doc.id, ...doc.data() });
         });
         
-        console.log(`✅ Retrieved ${items.length} portfolio items`);
+      
         return { success: true, data: items };
     } catch (error) {
         console.error('❌ Error getting portfolio items:', error);
@@ -77,7 +76,7 @@ async function deletePortfolioItem(itemId) {
     try {
         initializeFirebase();
         await db.collection('portfolio').doc(itemId).delete();
-        console.log('✅ Portfolio item deleted:', itemId);
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting portfolio item:', error);
@@ -100,7 +99,7 @@ async function addService(serviceData) {
             icon: serviceData.icon || 'fas fa-camera',
             createdAt: new Date().toISOString()
         });
-        console.log('✅ Service added with ID:', docRef.id);
+        
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error adding service:', error);
@@ -123,7 +122,7 @@ async function getServices() {
             services.push({ id: doc.id, ...doc.data() });
         });
         
-        console.log(`✅ Retrieved ${services.length} services`);
+       
         return { success: true, data: services };
     } catch (error) {
         console.error('❌ Error getting services:', error);
@@ -140,7 +139,7 @@ async function updateService(serviceId, updateData) {
     try {
         initializeFirebase();
         await db.collection('services').doc(serviceId).update(updateData);
-        console.log('✅ Service updated:', serviceId);
+      
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating service:', error);
@@ -156,7 +155,7 @@ async function deleteService(serviceId) {
     try {
         initializeFirebase();
         await db.collection('services').doc(serviceId).delete();
-        console.log('✅ Service deleted:', serviceId);
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting service:', error);
@@ -176,9 +175,7 @@ async function addTestimonial(testimonialData) {
         
         // Debug authentication state
         const currentUser = auth.currentUser;
-        console.log('🔍 Current user:', currentUser);
-        console.log('🔍 User UID:', currentUser ? currentUser.uid : 'No user');
-        console.log('🔍 User email:', currentUser ? currentUser.email : 'No user');
+       
         
         const docRef = await db.collection('testimonials').add({
             clientName: testimonialData.clientName,
@@ -187,7 +184,7 @@ async function addTestimonial(testimonialData) {
             clientImage: testimonialData.clientImage || null,
             createdAt: new Date().toISOString()
         });
-        console.log('✅ Testimonial added with ID:', docRef.id);
+        
         return { success: true, id: docRef.id };
     } catch (error) {
         console.error('❌ Error adding testimonial:', error);
@@ -227,7 +224,7 @@ async function deleteTestimonial(testimonialId) {
     try {
         initializeFirebase();
         await db.collection('testimonials').doc(testimonialId).delete();
-        console.log('✅ Testimonial deleted:', testimonialId);
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error deleting testimonial:', error);
@@ -244,7 +241,7 @@ async function updateTestimonial(testimonialId, updateData) {
     try {
         initializeFirebase();
         await db.collection('testimonials').doc(testimonialId).update(updateData);
-        console.log('✅ Testimonial updated:', testimonialId);
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating testimonial:', error);
@@ -270,7 +267,7 @@ async function uploadTestimonialImage(file, fileName) {
         
         // Get download URL
         const downloadURL = await snapshot.ref.getDownloadURL();
-        console.log('✅ Image uploaded to Firebase Storage:', downloadURL);
+        
         return downloadURL;
     } catch (error) {
         console.error('❌ Error uploading image to Firebase Storage:', error);
@@ -288,7 +285,7 @@ async function updateAboutInfo(aboutData) {
     try {
         initializeFirebase();
         await db.collection('settings').doc('about').set(aboutData, { merge: true });
-        console.log('✅ About info updated');
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating about info:', error);
@@ -305,10 +302,10 @@ async function getAboutInfo() {
         const doc = await db.collection('settings').doc('about').get();
         
         if (doc.exists) {
-            console.log('✅ About info retrieved');
+            
             return { success: true, data: doc.data() };
         } else {
-            console.log('⚠️ No about info found');
+            
             return { success: true, data: {} };
         }
     } catch (error) {
@@ -327,7 +324,7 @@ async function updateContactInfo(contactData) {
     try {
         initializeFirebase();
         await db.collection('settings').doc('contact').set(contactData, { merge: true });
-        console.log('✅ Contact info updated');
+        
         return { success: true };
     } catch (error) {
         console.error('❌ Error updating contact info:', error);
@@ -344,10 +341,10 @@ async function getContactInfo() {
         const doc = await db.collection('settings').doc('contact').get();
         
         if (doc.exists) {
-            console.log('✅ Contact info retrieved');
+            
             return { success: true, data: doc.data() };
         } else {
-            console.log('⚠️ No contact info found');
+            
             return { success: true, data: {} };
         }
     } catch (error) {
@@ -385,36 +382,8 @@ if (typeof window !== 'undefined') {
         updateContactInfo,
         getContactInfo,
         
-        // Test function
-        testConnection: async function() {
-            try {
-                initializeFirebase();
-                const testDoc = await db.collection('testimonials').limit(1).get();
-                console.log('✅ Firebase connection test successful');
-                return { success: true, message: 'Firebase connection working' };
-            } catch (error) {
-                console.error('❌ Firebase connection test failed:', error);
-                return { success: false, error: error.message };
-            }
-        },
+       
         
-        // Add test testimonial
-        addTestTestimonial: async function() {
-            const testData = {
-                clientName: 'Test Client',
-                testimonialText: 'This is a test testimonial to verify the functionality is working correctly.',
-                rating: 5,
-                clientImage: null
-            };
-            
-            console.log('🧪 Adding test testimonial...');
-            const result = await addTestimonial(testData);
-            if (result.success) {
-                console.log('✅ Test testimonial added successfully');
-            } else {
-                console.error('❌ Failed to add test testimonial:', result.error);
-            }
-            return result;
-        }
+       
     };
 }
