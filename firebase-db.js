@@ -12,7 +12,6 @@ function initializeFirebase() {
         // Use the global db and auth from admin-panel.html
         if (typeof db !== 'undefined' && typeof auth !== 'undefined') {
             initialized = true;
-            console.log('✅ Firebase initialized successfully (using global db and auth)');
         } else {
             console.error('❌ Global db or auth not available');
             console.log('db available:', typeof db !== 'undefined');
@@ -213,7 +212,6 @@ async function getTestimonials() {
             testimonials.push({ id: doc.id, ...doc.data() });
         });
         
-        console.log(`✅ Retrieved ${testimonials.length} testimonials`);
         return { success: true, data: testimonials };
     } catch (error) {
         console.error('❌ Error getting testimonials:', error);
@@ -419,6 +417,4 @@ if (typeof window !== 'undefined') {
             return result;
         }
     };
-    
-    console.log('✅ firebaseDB object created and exported to window');
 }

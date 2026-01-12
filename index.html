@@ -629,8 +629,8 @@
         }
 
         .testimonial-image {
-            width: 260px;
-            height: 260px;
+            width: 240px;
+            height: 240px;
             border-radius: 50%;
             object-fit: cover;
             margin-bottom: 30px;
@@ -687,8 +687,8 @@
             }
             
             .testimonial-image {
-                width: 240px;
-                height: 240px;
+                width: 230px;
+                height: 230px;
             }
         }
 
@@ -721,8 +721,8 @@
             }
             
             .testimonial-image {
-                width: 260px;
-                height: 260px;
+                width: 230px;
+                height: 230px;
             }
             .testimonial-text {
                 font-size: 0.85rem;
@@ -2257,10 +2257,6 @@
         
         <div class="testimonials-grid" id="testimonialsContainer">
             <!-- Testimonials will be dynamically loaded from Firebase -->
-            <div class="testimonial-placeholder">
-                <h3>No Testimonials Yet</h3>
-                <p>Client testimonials will appear here once added from the admin panel.</p>
-            </div>
         </div>
     </section>
 
@@ -2429,11 +2425,6 @@
         firebase.initializeApp(firebaseConfig);
         const auth = firebase.auth();
         const db = firebase.firestore();
-        
-        // Debug: Check if Firebase is properly initialized
-        console.log('🔍 Firebase initialized:', !!firebase.apps.length);
-        console.log('🔍 Auth available:', !!auth);
-        console.log('🔍 Firestore available:', !!db);
     </script>
     
     <!-- Firebase Database Helper -->
@@ -2907,7 +2898,6 @@ document.addEventListener('visibilitychange', function() {
                     container.innerHTML = `
                         <div class="testimonial-placeholder">
                             <h3>No Testimonials Yet</h3>
-                            <p>Client testimonials will appear here once added from the admin panel.</p>
                         </div>
                     `;
                 }
@@ -2991,9 +2981,9 @@ document.addEventListener('visibilitychange', function() {
                 
                 const categoryPhotos = photos.filter(photo => photo.category === category);
                 
-                // If no uploaded photos found, show placeholder message
+                // If no uploaded photos found, show nothing
                 if (categoryPhotos.length === 0) {
-                    grid.innerHTML = '<p style="color: var(--text-dark); padding: 20px; text-align: center; width: 100%;">No photos uploaded yet in this category. Upload photos from the admin panel to see them here!</p>';
+                    grid.innerHTML = '';
                 } else {
                     // Set up grid container for the gallery
                     const isMobile = window.innerWidth <= 768;
