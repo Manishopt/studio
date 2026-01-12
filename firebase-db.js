@@ -381,9 +381,5 @@ if (typeof window !== 'undefined') {
         // Contact
         updateContactInfo,
         getContactInfo,
-        
-       
-        
-       
     };
 }

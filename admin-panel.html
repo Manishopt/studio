@@ -2143,7 +2143,8 @@
                     const result = await firebaseDB.getTestimonials();
                     if (result.success) {
                         testimonials = result.data;
-                       
+                        console.log('✅ Testimonials loaded from Firebase');
+                    } else {
                         console.error('❌ Firebase error:', result.error);
                     }
                 } else {
@@ -3517,13 +3518,7 @@
             try {
                 // Initialize Firebase if available
                 if (typeof firebase !== 'undefined' && typeof firebaseDB !== 'undefined') {
-                   
-                    const connectionTest = await firebaseDB.testConnection();
-                    if (connectionTest.success) {
-                        
-                    } else {
-                        console.error('❌ Firebase connection failed:', connectionTest.error);
-                    }
+                    console.log('✅ Firebase initialized successfully');
                 } else {
                     console.warn('⚠️ Firebase not available');
                 }
