@@ -2332,7 +2332,7 @@
                     </div>
                     
                     <div class="transparent-social-icons">
-                        <a href="https://www.instagram.com/insight_frame___" target="_blank" aria-label="Instagram">
+                        <a href="https://www.instagram.com/tj_clicks_studio?igsh=bTlpdGZwNDI4MjYw" target="_blank" aria-label="Instagram">
                             <i class="fab fa-instagram"></i>
                         </a>
                         <a href="https://wa.me/919460657127" target="_blank" aria-label="WhatsApp">
@@ -2384,7 +2384,7 @@
       Jagatpura, Jaipur,302017 We're near the Near JNU College.</p>
         </div>
         <div>
-            <a href="https://www.instagram.com/Insight_Frame___" target="_blank" rel="noopener noreferrer">
+            <a href="https://www.instagram.com/tj_clicks_studio?igsh=bTlpdGZwNDI4MjYw" target="_blank" rel="noopener noreferrer">
                 <i class="fab fa-instagram"></i> Instagram
             </a>
             <a href="https://wa.me/919460657127" target="_blank" rel="noopener noreferrer">
@@ -2699,10 +2699,10 @@ document.addEventListener('visibilitychange', function() {
             }
             
             // Group photos by category
-            const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
+            const categories = ['Wedding', 'Maternity & Baby', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
             const categoryIcons = {
                 'Wedding': 'fa-camera',
-                'Maternity': 'fa-baby', 
+                'Maternity & Baby': 'fa-baby', 
                 'Portrait': 'fa-user',
                 'Commercial': 'fa-briefcase',
                 'Nature': 'fa-tree',
@@ -2711,9 +2711,18 @@ document.addEventListener('visibilitychange', function() {
             
             // Load thumbnails from Supabase
             loadThumbnailsFromSupabase().then(thumbnails => {
-                                
+                               
                 categories.forEach(category => {
-                    const categoryPhotos = photos.filter(photo => photo.category === category);
+                    // Handle both old and new category names for backward compatibility
+                    let categoryPhotos = photos.filter(photo => photo.category === category);
+                    
+                    // Special handling for Maternity & Baby category
+                    if (category === 'Maternity & Baby') {
+                        const maternityPhotos = photos.filter(photo => photo.category === 'Maternity');
+                        const babyPhotos = photos.filter(photo => photo.category === 'Baby');
+                        categoryPhotos = [...categoryPhotos, ...maternityPhotos, ...babyPhotos];
+                    }
+                    
                     const figure = document.createElement('figure');
                     
                     // Check if we have a custom thumbnail for this category
