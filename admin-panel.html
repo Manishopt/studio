@@ -971,7 +971,7 @@
         // Session State Management
         class SessionManager {
             constructor() {
-                // Try to initialize Firebase, but have fallback for local development
+                // Try to initialize Firebase, but have fallback authentication
                 this.waitForFirebase().then(() => {
                     this.auth = firebase.auth();
                     this.isActive = false;
@@ -1008,7 +1008,7 @@
             }
 
             useFallbackAuth() {
-                // Fallback authentication for local development
+                // Fallback authentication system
                 this.auth = {
                     currentUser: null,
                     signOut: () => Promise.resolve(),
@@ -1068,18 +1068,8 @@
             }
 
             showFallbackLogin() {
-                const email = prompt('Please enter admin email for local development:');
-                if (email && email.includes('@')) {
-                    sessionStorage.setItem('fallbackAuthUser', email);
-                    sessionStorage.setItem(SESSION_CONFIG.SESSION_KEY, 'true');
-                    localStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, Date.now().toString());
-                    
-                    // Reload to trigger auth state change
-                    window.location.reload();
-                } else {
-                    alert('Valid email required for admin access.');
-                    window.location.href = 'index.html';
-                }
+                // Redirect to login page instead of showing prompt
+                window.location.href = 'admin-login.html';
             }
 
             setupActivityTracking() {
