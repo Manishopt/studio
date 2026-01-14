@@ -105,7 +105,7 @@
     // Load gallery from Supabase
     async function loadGallery() {
       const category = getQueryParam('category') || 'Wedding';
-      document.getElementById('catTitle').textContent = category;
+      document.getElementById('catTitle').textContent = category + ' Photography';
       const grid = document.getElementById('grid');
       
       try {
@@ -113,7 +113,10 @@
         const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
         
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/portfolio?category=eq.${encodeURIComponent(category)}`, {
+        let allPhotos = [];
+        
+        // Load all photos first, then filter
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/portfolio?order=uploaded_at.desc`, {
           method: 'GET',
           headers: {
             'apikey': SUPABASE_KEY,
@@ -124,9 +127,37 @@
 
         if (!response.ok) throw new Error('Failed to load gallery');
         
-        const photos = await response.json();
+        allPhotos = await response.json();
         
-        if (!photos || photos.length === 0) {
+        // Debug: Log all photos to see what we have
+        console.log('All photos from database:', allPhotos);
+        console.log('Requested category:', category);
+        
+        // Handle both new and old category names for backward compatibility
+        let filteredPhotos = [];
+        
+        // Special handling for Maternity & Baby category
+        if (category === 'Maternity & Baby') {
+          const maternityAndBabyPhotos = allPhotos.filter(photo => photo.category === category);
+          const maternityPhotos = allPhotos.filter(photo => photo.category === 'Maternity');
+          const babyPhotos = allPhotos.filter(photo => photo.category === 'Baby');
+          
+          console.log('Maternity & Baby photos:', maternityAndBabyPhotos);
+          console.log('Maternity photos:', maternityPhotos);
+          console.log('Baby photos:', babyPhotos);
+          
+          filteredPhotos = [...maternityAndBabyPhotos, ...maternityPhotos, ...babyPhotos];
+        } else {
+          filteredPhotos = allPhotos.filter(photo => photo.category === category);
+        }
+        
+        // Remove duplicates based on URL
+        const uniquePhotos = Array.from(new Set(filteredPhotos.map(p => p.url)))
+          .map(url => filteredPhotos.find(p => p.url === url));
+        
+        console.log('Final unique photos to display:', uniquePhotos);
+        
+        if (!uniquePhotos || uniquePhotos.length === 0) {
           document.getElementById('emptyMsg').style.display = 'block';
           return;
         }
@@ -135,7 +166,7 @@
         grid.innerHTML = '';
         
         // Add photos to grid
-        photos.forEach(photo => {
+        uniquePhotos.forEach(photo => {
           const item = document.createElement('div');
           item.className = 'gallery-item';
           

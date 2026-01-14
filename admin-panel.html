@@ -958,6 +958,180 @@
     </style>
 </head>
 <body>
+    <!-- Production-Ready Session Management System -->
+    <script>
+        // Session Configuration
+        const SESSION_CONFIG = {
+            INACTIVITY_TIMEOUT: 30 * 60 * 1000, // 30 minutes in milliseconds
+            ACTIVITY_CHECK_INTERVAL: 5 * 1000, // Check every 5 seconds
+            SESSION_KEY: 'adminSession',
+            ACTIVITY_KEY: 'lastActivity'
+        };
+
+        // Session State Management
+        class SessionManager {
+            constructor() {
+                this.auth = firebase.auth();
+                this.isActive = false;
+                this.lastActivity = null;
+                this.checkInterval = null;
+                this.init();
+            }
+
+            init() {
+               
+                
+                // Clear any existing session to force fresh login
+                this.clearSession();
+                
+                // Wait for Firebase to be ready
+                setTimeout(() => {
+                    this.setupAuthListener();
+                    this.setupActivityTracking();
+                    this.startInactivityChecker();
+                }, 1000);
+            }
+
+            setupAuthListener() {
+                this.auth.onAuthStateChanged((user) => {
+                   
+                    
+                    if (!user) {
+                       
+                        this.logout('Please login to access the admin panel.');
+                        return;
+                    }
+                    
+                    // Check if this is a fresh session
+                    if (!this.hasValidSession()) {
+                       
+                        this.createSession();
+                        this.lastActivity = Date.now();
+                    } else {
+                       
+                    }
+                    
+                    this.isActive = true;
+                    this.hideLoadingMessage();
+                });
+            }
+
+            setupActivityTracking() {
+                // Track all user interactions to extend session
+                const events = ['click', 'keydown', 'mousemove', 'scroll'];
+                
+                events.forEach(event => {
+                    document.addEventListener(event, () => {
+                        if (this.isActive) {
+                            this.updateActivity();
+                        }
+                    });
+                });
+
+                // Handle tab visibility changes
+                document.addEventListener('visibilitychange', () => {
+                    if (document.hidden) {
+                       
+                        // Don't update activity when tab is hidden
+                    } else {
+                       
+                        if (this.isActive) {
+                            this.updateActivity();
+                        }
+                    }
+                });
+            }
+
+            startInactivityChecker() {
+                this.checkInterval = setInterval(() => {
+                    if (this.isActive && this.isInactive()) {
+                       
+                        this.logout('Session expired due to inactivity. Please login again.');
+                    }
+                }, SESSION_CONFIG.ACTIVITY_CHECK_INTERVAL);
+            }
+
+            createSession() {
+                sessionStorage.setItem(SESSION_CONFIG.SESSION_KEY, 'true');
+                localStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, Date.now().toString());
+            }
+
+            hasValidSession() {
+                const currentSession = sessionStorage.getItem(SESSION_CONFIG.SESSION_KEY);
+                const lastActivity = localStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                const now = Date.now();
+                
+                if (!currentSession || !lastActivity) {
+                    return false;
+                }
+                
+                const timeSinceActivity = now - parseInt(lastActivity);
+                return timeSinceActivity < SESSION_CONFIG.INACTIVITY_TIMEOUT;
+            }
+
+            isInactive() {
+                const lastActivity = localStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                if (!lastActivity) return true;
+                
+                const timeSinceActivity = Date.now() - parseInt(lastActivity);
+                return timeSinceActivity >= SESSION_CONFIG.INACTIVITY_TIMEOUT;
+            }
+
+            updateActivity() {
+                this.lastActivity = Date.now();
+                localStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, this.lastActivity.toString());
+               
+            }
+
+            hideLoadingMessage() {
+                const loadingMessage = document.getElementById('loadingMessage');
+                if (loadingMessage) {
+                    loadingMessage.style.display = 'none';
+                }
+            }
+
+            logout(message) {
+               
+                
+                // Clear all session data
+                this.clearSession();
+                
+                // Sign out from Firebase
+                this.auth.signOut().then(() => {
+                    alert(message);
+                    window.location.href = 'admin-login.html';
+                }).catch((error) => {
+                    console.error(' Logout error:', error);
+                    alert(message);
+                    window.location.href = 'admin-login.html';
+                });
+            }
+
+            clearSession() {
+                sessionStorage.removeItem(SESSION_CONFIG.SESSION_KEY);
+                localStorage.removeItem(SESSION_CONFIG.ACTIVITY_KEY);
+               
+            }
+
+            cleanup() {
+                if (this.checkInterval) {
+                    clearInterval(this.checkInterval);
+                }
+            }
+        }
+
+        // Initialize session manager when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionManager = new SessionManager();
+            
+            // Cleanup on page unload
+            window.addEventListener('beforeunload', () => {
+             
+                sessionManager.cleanup();
+            });
+        });
+    </script>
+    
     <!-- Mobile Menu Toggle -->
     <button class="mobile-menu-toggle" id="mobileMenuToggle">
         <i class="fas fa-bars"></i>
@@ -1137,7 +1311,7 @@
                         <select id="photoCategory" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; background: white; font-size: 14px; min-height: 45px; color: #333; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                             <option value="">Choose a category</option>
                             <option value="Wedding">Wedding Photography</option>
-                            <option value="Maternity">Maternity Photography</option>
+                            <option value="Maternity & Baby">Maternity & Baby Photography</option>
                             <option value="Portrait">Portrait Photography</option>
                             <option value="Commercial">Commercial Photography</option>
                             <option value="Nature">Nature Photography</option>
@@ -1187,7 +1361,7 @@
                 <strong style="margin-right: 10px;">Filter by Category:</strong>
                 <button class="btn btn-primary" onclick="filterPhotos('all')" style="padding: 8px 16px;">All Photos</button>
                 <button class="btn" onclick="filterPhotos('Wedding')" style="padding: 8px 16px; background: #e74c3c; color: white;">Wedding</button>
-                <button class="btn" onclick="filterPhotos('Maternity')" style="padding: 8px 16px; background: #f39c12; color: white;">Maternity</button>
+                <button class="btn" onclick="filterPhotos('Maternity & Baby')" style="padding: 8px 16px; background: #f39c12; color: white;">Maternity & Baby</button>
                 <button class="btn" onclick="filterPhotos('Portrait')" style="padding: 8px 16px; background: #9b59b6; color: white;">Portrait</button>
                 <button class="btn" onclick="filterPhotos('Commercial')" style="padding: 8px 16px; background: #3498db; color: white;">Commercial</button>
                 <button class="btn" onclick="filterPhotos('PreWedding')" style="padding: 8px 16px; background: #1abc9c; color: white;">Pre-Wedding</button>
@@ -2143,7 +2317,7 @@
                     const result = await firebaseDB.getTestimonials();
                     if (result.success) {
                         testimonials = result.data;
-                        console.log('✅ Testimonials loaded from Firebase');
+                        
                     } else {
                         console.error('❌ Firebase error:', result.error);
                     }
@@ -2469,7 +2643,7 @@
             // Category colors
             const categoryColors = {
                 'Wedding': '#e74c3c',
-                'Maternity': '#f39c12',
+                'Maternity & Baby': '#f39c12',
                 'Portrait': '#9b59b6',
                 'Commercial': '#3498db',
                 'PreWedding': '#1abc9c',
@@ -3226,7 +3400,7 @@
                 const thumbnails = await loadThumbnailsFromSupabase();
                 
                 // Define categories
-                const categories = ['Wedding', 'Maternity', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
+                const categories = ['Wedding', 'Maternity & Baby', 'Portrait', 'Commercial', 'Nature', 'Fashion'];
                 
                 // Clear existing content
                 thumbnailsGrid.innerHTML = '';
@@ -3372,8 +3546,12 @@
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
             
             try {
+                // URL-encode the category for API requests
+                const encodedCategory = encodeURIComponent(category);
+
+                
                 // First, check if thumbnail already exists for this category
-                const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails?category=eq.${category}`, {
+                const checkResponse = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails?category=eq.${encodedCategory}`, {
                     method: 'GET',
                     headers: {
                         'apikey': SUPABASE_KEY,
@@ -3383,6 +3561,7 @@
                 
                 if (checkResponse.ok) {
                     const existingThumbnails = await checkResponse.json();
+                    
                     
                     if (existingThumbnails.length > 0) {
                         // Update existing thumbnail
@@ -3400,9 +3579,14 @@
                             })
                         });
                         
+                  
+                        
                         if (!updateResponse.ok) {
-                            throw new Error('Failed to update thumbnail in Supabase');
+                            const errorText = await updateResponse.text();
+                            console.error('Update error details:', errorText);
+                            throw new Error(`Failed to update thumbnail in Supabase: ${updateResponse.status}`);
                         }
+                        
                     } else {
                         // Insert new thumbnail
                         const insertResponse = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails`, {
@@ -3420,9 +3604,14 @@
                             })
                         });
                         
+                      
+                        
                         if (!insertResponse.ok) {
-                            throw new Error('Failed to save thumbnail to Supabase');
+                            const errorText = await insertResponse.text();
+                            console.error('Insert error details:', errorText);
+                            throw new Error(`Failed to save thumbnail to Supabase: ${insertResponse.status}`);
                         }
+                       
                     }
                 } else {
                     throw new Error('Failed to check existing thumbnails');
@@ -3518,7 +3707,7 @@
             try {
                 // Initialize Firebase if available
                 if (typeof firebase !== 'undefined' && typeof firebaseDB !== 'undefined') {
-                    console.log('✅ Firebase initialized successfully');
+                   
                 } else {
                     console.warn('⚠️ Firebase not available');
                 }

@@ -2711,8 +2711,15 @@ document.addEventListener('visibilitychange', function() {
             
             // Load thumbnails from Supabase
             loadThumbnailsFromSupabase().then(thumbnails => {
+              
+                
+                // Check specifically for Maternity & Baby thumbnail
+                const maternityBabyThumbnail = thumbnails.find(thumb => thumb.category === 'Maternity & Baby');
+               
                                
                 categories.forEach(category => {
+                    
+                    
                     // Handle both old and new category names for backward compatibility
                     let categoryPhotos = photos.filter(photo => photo.category === category);
                     
@@ -2726,15 +2733,49 @@ document.addEventListener('visibilitychange', function() {
                     const figure = document.createElement('figure');
                     
                     // Check if we have a custom thumbnail for this category
-                    const categoryThumbnail = thumbnails.find(t => t.category === category);
+                    let categoryThumbnail = thumbnails.find(thumbnail => thumbnail.category === category);
+                    
+                    // Special handling for Maternity & Baby category - check for multiple thumbnail options
+                    if (category === 'Maternity & Baby' && !categoryThumbnail) {
+                        // Try to find maternity or baby thumbnails as fallback
+                        const maternityThumbnail = thumbnails.find(thumbnail => thumbnail.category === 'Maternity');
+                        const babyThumbnail = thumbnails.find(thumbnail => thumbnail.category === 'Baby');
+                        
+                        // Prefer maternity thumbnail, then baby thumbnail
+                        categoryThumbnail = maternityThumbnail || babyThumbnail;
+                        
+                        
+                    }
+                    
+                    
+                    
+                    if (categoryThumbnail && categoryThumbnail.thumbnail_url) {
+                       
+                    } else {
+                       
+                    }
                     
                     // Make entire figure clickable
                     figure.onclick = () => openGallery(category);
                     
                     if (categoryThumbnail && categoryThumbnail.thumbnail_url) {
-                        // Use uploaded thumbnail from admin panel
+                        // Use uploaded thumbnail from admin panel with cache-busting
+                        let thumbnailUrl = categoryThumbnail.thumbnail_url;
+                        
+                        // Convert HEIC files to JPG for browser compatibility
+                        if (thumbnailUrl.toLowerCase().includes('.heic')) {
+                            thumbnailUrl = thumbnailUrl.replace(/\.[^/.]+$/, '.jpg');
+                        }
+                        
+                        // Add cache-busting
+                        thumbnailUrl = thumbnailUrl.includes('?') 
+                            ? `${thumbnailUrl}&t=${Date.now()}`
+                            : `${thumbnailUrl}?t=${Date.now()}`;
+                        
+                        
+                        
                         figure.innerHTML = `
-                            <img src="${categoryThumbnail.thumbnail_url}" alt="${category} Photography" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${category.toLowerCase()}/400/300.jpg';">
+                            <img src="${thumbnailUrl}" alt="${category} Photography" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${category.toLowerCase()}/400/300.jpg';">
                             <div class="portfolio-overlay">
                                 <div class="view-more-btn">
                                     <i class="fas fa-eye"></i> View More
@@ -2779,7 +2820,16 @@ document.addEventListener('visibilitychange', function() {
                 console.error('Error loading thumbnails:', error);
                 // Fallback to original behavior if Supabase fails
                 categories.forEach(category => {
-                    const categoryPhotos = photos.filter(photo => photo.category === category);
+                    // Handle both old and new category names for backward compatibility
+                    let categoryPhotos = photos.filter(photo => photo.category === category);
+                    
+                    // Special handling for Maternity & Baby category
+                    if (category === 'Maternity & Baby') {
+                        const maternityPhotos = photos.filter(photo => photo.category === 'Maternity');
+                        const babyPhotos = photos.filter(photo => photo.category === 'Baby');
+                        categoryPhotos = [...categoryPhotos, ...maternityPhotos, ...babyPhotos];
+                    }
+                    
                     const figure = document.createElement('figure');
                     
                     // Make entire figure clickable
@@ -2823,6 +2873,15 @@ document.addEventListener('visibilitychange', function() {
         async function loadThumbnailsFromSupabase() {
             const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
             const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
+            
+            /**
+             * Encodes category names for URL usage
+             * @param {string} category - Category name that might contain special characters
+             * @returns {string} URL-encoded category name
+             */
+            function encodeCategory(category) {
+                return encodeURIComponent(category);
+            }
             
             try {
                 const response = await fetch(`${SUPABASE_URL}/rest/v1/thumbnails`, {
@@ -2964,7 +3023,8 @@ document.addEventListener('visibilitychange', function() {
                     const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
                     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
                     
-                    const response = await fetch(`${SUPABASE_URL}/rest/v1/portfolio?category=eq.${category}&order=uploaded_at.desc`, {
+                    // Load all photos first, then filter (like gallery.html)
+                    const response = await fetch(`${SUPABASE_URL}/rest/v1/portfolio?order=uploaded_at.desc`, {
                         method: 'GET',
                         headers: {
                             'apikey': SUPABASE_KEY,
@@ -2974,12 +3034,25 @@ document.addEventListener('visibilitychange', function() {
                     });
                     
                     if (response.ok) {
-                        const supabasePhotos = await response.json();
-                        photos = supabasePhotos.map(photo => ({
+                        const allPhotos = await response.json();
+                        
+                        // Handle both new and old category names for backward compatibility
+                        let filteredPhotos = allPhotos.filter(photo => photo.category === category);
+                        
+                        // Special handling for Maternity & Baby category
+                        if (category === 'Maternity & Baby') {
+                            const maternityPhotos = allPhotos.filter(photo => photo.category === 'Maternity');
+                            const babyPhotos = allPhotos.filter(photo => photo.category === 'Baby');
+                            filteredPhotos = [...filteredPhotos, ...maternityPhotos, ...babyPhotos];
+                        }
+                        
+                        photos = filteredPhotos.map(photo => ({
                             ...photo,
                             isMain: photo.is_main || false
                         }));
-                                            } else {
+                        
+                       
+                    } else {
                         throw new Error('Failed to load from Supabase');
                     }
                 } catch (error) {
@@ -2988,7 +3061,15 @@ document.addEventListener('visibilitychange', function() {
                     photos = JSON.parse(localStorage.getItem('cloudinaryPhotos') || '[]');
                 }
                 
-                const categoryPhotos = photos.filter(photo => photo.category === category);
+                // Handle both new and old category names for backward compatibility (for localStorage fallback)
+                let categoryPhotos = photos.filter(photo => photo.category === category);
+                
+                // Special handling for Maternity & Baby category
+                if (category === 'Maternity & Baby') {
+                    const maternityPhotos = photos.filter(photo => photo.category === 'Maternity');
+                    const babyPhotos = photos.filter(photo => photo.category === 'Baby');
+                    categoryPhotos = [...categoryPhotos, ...maternityPhotos, ...babyPhotos];
+                }
                 
                 // If no uploaded photos found, show nothing
                 if (categoryPhotos.length === 0) {

@@ -4,6 +4,15 @@
 const SUPABASE_URL = 'https://xaiperlmtvanjuvvrvpl.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw';
 
+/**
+ * Encodes category names for URL usage
+ * @param {string} category - Category name that might contain special characters
+ * @returns {string} URL-encoded category name
+ */
+function encodeCategory(category) {
+    return encodeURIComponent(category);
+}
+
 
 
 /**
@@ -196,7 +205,7 @@ async function loadPhotosFromSupabase(category = null) {
     try {
         let url = `${SUPABASE_URL}/rest/v1/portfolio?order=uploaded_at.desc`;
         if (category) {
-            url += `&category=eq.${category}`;
+            url += `&category=eq.${encodeCategory(category)}`;
         }
 
         const response = await fetch(url, {
