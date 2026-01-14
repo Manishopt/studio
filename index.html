@@ -2767,6 +2767,11 @@ document.addEventListener('visibilitychange', function() {
                             thumbnailUrl = thumbnailUrl.replace(/\.[^/.]+$/, '.jpg');
                         }
                         
+                        // Apply Cloudinary optimization if it's a Cloudinary URL
+                        if (thumbnailUrl.includes('res.cloudinary.com')) {
+                            thumbnailUrl = thumbnailUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400/');
+                        }
+                        
                         // Add cache-busting
                         thumbnailUrl = thumbnailUrl.includes('?') 
                             ? `${thumbnailUrl}&t=${Date.now()}`
@@ -2775,7 +2780,7 @@ document.addEventListener('visibilitychange', function() {
                         
                         
                         figure.innerHTML = `
-                            <img src="${thumbnailUrl}" alt="${category} Photography" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${category.toLowerCase()}/400/300.jpg';">
+                            <img src="${thumbnailUrl}" alt="${category} Photography" loading="lazy" onerror="this.onerror=null; this.src='https://picsum.photos/seed/${category.toLowerCase()}/400/300.jpg';">
                             <div class="portfolio-overlay">
                                 <div class="view-more-btn">
                                     <i class="fas fa-eye"></i> View More
@@ -2786,8 +2791,14 @@ document.addEventListener('visibilitychange', function() {
                     } else if (categoryPhotos.length > 0) {
                         // Show first photo from category as thumbnail
                         const thumbnail = categoryPhotos[0];
+                        // Apply Cloudinary optimization if it's a Cloudinary URL
+                        let optimizedThumbnailUrl = thumbnail.url;
+                        if (optimizedThumbnailUrl.includes('res.cloudinary.com')) {
+                            optimizedThumbnailUrl = optimizedThumbnailUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_400/');
+                        }
+                        
                         figure.innerHTML = `
-                            <img src="${thumbnail.url}" alt="${category} Photography">
+                            <img src="${optimizedThumbnailUrl}" alt="${category} Photography" loading="lazy">
                             <div class="portfolio-overlay">
                                 <div class="view-more-btn">
                                     <i class="fas fa-eye"></i> View More

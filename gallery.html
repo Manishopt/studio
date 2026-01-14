@@ -167,7 +167,12 @@
           item.className = 'gallery-item';
           
           const img = document.createElement('img');
-          img.src = photo.url;
+          // Apply Cloudinary optimization if it's a Cloudinary URL
+          let optimizedUrl = photo.url;
+          if (optimizedUrl.includes('res.cloudinary.com')) {
+            optimizedUrl = optimizedUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_1200/');
+          }
+          img.src = optimizedUrl;
           img.alt = category + ' photo';
           img.loading = 'lazy';
           

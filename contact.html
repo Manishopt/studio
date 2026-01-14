@@ -1338,9 +1338,18 @@
             
             backgroundPhotos.forEach((photo, index) => {
                 const slide = document.createElement('img');
-                slide.src = photo.url;
+                // Apply Cloudinary optimization if it's a Cloudinary URL
+                let optimizedUrl = photo.url;
+                if (optimizedUrl.includes('res.cloudinary.com')) {
+                    optimizedUrl = optimizedUrl.replace('/image/upload/', '/image/upload/f_auto,q_auto,w_1600/');
+                }
+                slide.src = optimizedUrl;
                 slide.className = 'bg-slide';
-                if (index === 0) slide.classList.add('active');
+                if (index === 0) {
+                    slide.classList.add('active');
+                } else {
+                    slide.loading = 'lazy';
+                }
                 carousel.appendChild(slide);
             });
             
@@ -1354,17 +1363,21 @@
             carousel.innerHTML = '';
             
             const defaultPhotos = [
-                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c3_pbw9mg.jpg',
-                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c4_dldrbt.jpg',
-                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805499/c2_pyeqva.jpg',
-                'https://res.cloudinary.com/dnpfsfvfv/image/upload/v1767805498/c1_jb0a1n.jpg'
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/f_auto,q_auto,w_1600/v1767805499/c3_pbw9mg.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/f_auto,q_auto,w_1600/v1767805499/c4_dldrbt.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/f_auto,q_auto,w_1600/v1767805499/c2_pyeqva.jpg',
+                'https://res.cloudinary.com/dnpfsfvfv/image/upload/f_auto,q_auto,w_1600/v1767805498/c1_jb0a1n.jpg'
             ];
             
             defaultPhotos.forEach((url, index) => {
                 const slide = document.createElement('img');
                 slide.src = url;
                 slide.className = 'bg-slide';
-                if (index === 0) slide.classList.add('active');
+                if (index === 0) {
+                    slide.classList.add('active');
+                } else {
+                    slide.loading = 'lazy';
+                }
                 carousel.appendChild(slide);
             });
             
