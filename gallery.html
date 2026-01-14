@@ -129,9 +129,7 @@
         
         allPhotos = await response.json();
         
-        // Debug: Log all photos to see what we have
-        console.log('All photos from database:', allPhotos);
-        console.log('Requested category:', category);
+       
         
         // Handle both new and old category names for backward compatibility
         let filteredPhotos = [];
@@ -142,9 +140,7 @@
           const maternityPhotos = allPhotos.filter(photo => photo.category === 'Maternity');
           const babyPhotos = allPhotos.filter(photo => photo.category === 'Baby');
           
-          console.log('Maternity & Baby photos:', maternityAndBabyPhotos);
-          console.log('Maternity photos:', maternityPhotos);
-          console.log('Baby photos:', babyPhotos);
+         
           
           filteredPhotos = [...maternityAndBabyPhotos, ...maternityPhotos, ...babyPhotos];
         } else {
@@ -155,7 +151,7 @@
         const uniquePhotos = Array.from(new Set(filteredPhotos.map(p => p.url)))
           .map(url => filteredPhotos.find(p => p.url === url));
         
-        console.log('Final unique photos to display:', uniquePhotos);
+       
         
         if (!uniquePhotos || uniquePhotos.length === 0) {
           document.getElementById('emptyMsg').style.display = 'block';
@@ -175,9 +171,36 @@
           img.alt = category + ' photo';
           img.loading = 'lazy';
           
-          // Open image in new tab when clicked
+          // Lock image functionality - zoom image on first click, lock it zoomed
+          let isLocked = false;
+          let isZoomed = false;
+          
+          // Zoom image when clicked (toggle zoom/lock)
           item.onclick = () => {
-            window.open(photo.url, '_blank');
+            if (!isLocked) {
+              // First click - zoom the image
+              img.style.transform = 'scale(1.2)';
+              img.style.transition = 'transform 0.3s ease';
+              item.style.transform = 'scale(1.05)';
+              item.style.zIndex = '10';
+              item.style.position = 'relative';
+              isZoomed = true;
+              isLocked = true; // Lock after first click
+              
+              // Add visual indicator that image is locked/zoomed
+              item.style.border = '2px solid #ff8fa3';
+              item.style.boxShadow = '0 0 20px rgba(255, 143, 163, 0.5)';
+            } else if (isZoomed) {
+              // Second click - toggle back to normal size (optional)
+              img.style.transform = 'scale(1)';
+              item.style.transform = 'scale(1)';
+              item.style.zIndex = '1';
+              isZoomed = false;
+              
+              // Remove visual indicators
+              item.style.border = '';
+              item.style.boxShadow = '';
+            }
           };
           
           item.appendChild(img);

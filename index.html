@@ -3103,20 +3103,45 @@ document.addEventListener('visibilitychange', function() {
                         container.style.transition = 'all 0.2s ease';
                         container.style.backgroundColor = 'var(--card-bg)';
 
-                        const a = document.createElement('a');
-                        a.href = photo.url;
+                        const a = document.createElement('div');
                         a.style.display = 'block';
                         a.style.width = '100%';
                         a.style.height = '100%';
+                        a.style.cursor = 'pointer';
                         
-                        // Use lightbox if available, otherwise open in new tab
-                        if (typeof lightbox !== 'undefined') {
-                            a.setAttribute('data-lightbox', category);
-                            a.setAttribute('data-title', `${category} Photo ${index + 1}`);
-                        } else {
-                            a.setAttribute('target', '_blank');
-                            a.setAttribute('rel', 'noopener noreferrer');
-                        }
+                        // Lock image functionality - zoom image on first click, lock it zoomed
+                        let isLocked = false;
+                        let isZoomed = false;
+                        
+                        // Zoom image when clicked (toggle zoom/lock)
+                        a.onclick = (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            if (!isLocked) {
+                                // First click - zoom the image
+                                img.style.transform = 'scale(1.2)';
+                                img.style.transition = 'transform 0.3s ease';
+                                container.style.transform = 'scale(1.05)';
+                                container.style.zIndex = '10';
+                                container.style.position = 'relative';
+                                isZoomed = true;
+                                isLocked = true; // Lock after first click
+                                
+                                // Add visual indicator that image is locked/zoomed
+                                container.style.border = '2px solid #ff8fa3';
+                                container.style.boxShadow = '0 0 20px rgba(255, 143, 163, 0.5)';
+                            } else if (isZoomed) {
+                                // Second click - toggle back to normal size (optional)
+                                img.style.transform = 'scale(1)';
+                                container.style.transform = 'scale(1)';
+                                container.style.zIndex = '1';
+                                isZoomed = false;
+                                
+                                // Remove visual indicators
+                                container.style.border = '';
+                                container.style.boxShadow = '';
+                            }
+                        };
                         
                         const img = new Image();
                         img.src = photo.url;
