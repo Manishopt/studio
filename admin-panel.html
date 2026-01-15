@@ -30,13 +30,8 @@
         const db = firebase.firestore();
         
         
-        // Check authentication status
-        auth.onAuthStateChanged((user) => {
-            if (!user) {
-                // User not authenticated, redirect to login
-                window.location.href = 'admin-login.html';
-            }
-        });
+        // Authentication is handled by SessionManager below
+        // This simple check is removed to avoid conflicts with session management
     </script>
     
     <style>
@@ -964,8 +959,8 @@
         const SESSION_CONFIG = {
             INACTIVITY_TIMEOUT: 30 * 60 * 1000, // 30 minutes in milliseconds
             ACTIVITY_CHECK_INTERVAL: 5 * 1000, // Check every 5 seconds
-            SESSION_KEY: 'adminSession',
-            ACTIVITY_KEY: 'lastActivity'
+            SESSION_KEY: 'adminLoggedIn', // Match login page key
+            ACTIVITY_KEY: 'loginTime' // Match login page key
         };
 
         // Session State Management
@@ -1032,8 +1027,7 @@
             init() {
                
                 
-                // Clear any existing session to force fresh login
-                this.clearSession();
+                // Don't clear session on initialization - let existing sessions persist
                 
                 // Wait for Firebase to be ready
                 setTimeout(() => {
@@ -1109,12 +1103,12 @@
 
             createSession() {
                 sessionStorage.setItem(SESSION_CONFIG.SESSION_KEY, 'true');
-                localStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, Date.now().toString());
+                sessionStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, Date.now().toString());
             }
 
             hasValidSession() {
                 const currentSession = sessionStorage.getItem(SESSION_CONFIG.SESSION_KEY);
-                const lastActivity = localStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                const lastActivity = sessionStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
                 const now = Date.now();
                 
                 if (!currentSession || !lastActivity) {
@@ -1126,7 +1120,7 @@
             }
 
             isInactive() {
-                const lastActivity = localStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                const lastActivity = sessionStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
                 if (!lastActivity) return true;
                 
                 const timeSinceActivity = Date.now() - parseInt(lastActivity);
@@ -1135,7 +1129,7 @@
 
             updateActivity() {
                 this.lastActivity = Date.now();
-                localStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, this.lastActivity.toString());
+                sessionStorage.setItem(SESSION_CONFIG.ACTIVITY_KEY, this.lastActivity.toString());
                
             }
 
@@ -1165,7 +1159,7 @@
 
             clearSession() {
                 sessionStorage.removeItem(SESSION_CONFIG.SESSION_KEY);
-                localStorage.removeItem(SESSION_CONFIG.ACTIVITY_KEY);
+                sessionStorage.removeItem(SESSION_CONFIG.ACTIVITY_KEY);
                
             }
 
