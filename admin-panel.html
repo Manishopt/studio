@@ -1029,6 +1029,18 @@
                 
                 // Don't clear session on initialization - let existing sessions persist
                 
+                // Quick check for valid sessionStorage before waiting for Firebase
+                const hasSessionStorage = sessionStorage.getItem(SESSION_CONFIG.SESSION_KEY) === 'true';
+                const hasValidLoginTime = sessionStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                
+                if (hasSessionStorage && hasValidLoginTime) {
+                    // If sessionStorage exists, activate immediately and skip Firebase delays
+                    this.isActive = true;
+                    this.lastActivity = Date.now();
+                    this.hideLoadingMessage();
+                    console.log('✅ Session found via sessionStorage - activating immediately');
+                }
+                
                 // Wait for Firebase to be ready
                 setTimeout(() => {
                     this.setupAuthListener();
@@ -1039,21 +1051,48 @@
 
             setupAuthListener() {
                 this.auth.onAuthStateChanged((user) => {
-                   
+                    console.log('🔍 Firebase auth state changed:', user ? 'User found' : 'No user');
+                    console.log('🔍 SessionStorage check:', {
+                        adminLoggedIn: sessionStorage.getItem(SESSION_CONFIG.SESSION_KEY),
+                        loginTime: sessionStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY)
+                    });
                     
-                    if (!user) {
-                       
+                    // Check both Firebase auth and sessionStorage
+                    const hasSessionStorage = sessionStorage.getItem(SESSION_CONFIG.SESSION_KEY) === 'true';
+                    const hasValidLoginTime = sessionStorage.getItem(SESSION_CONFIG.ACTIVITY_KEY);
+                    
+                    if (!user && !hasSessionStorage) {
+                        // Only redirect if both Firebase auth and sessionStorage are missing
+                        console.log('❌ No authentication found - redirecting to login');
                         this.showFallbackLogin();
+                        return;
+                    }
+                    
+                    // If we have sessionStorage but no Firebase user, it might be a timing issue
+                    // Give Firebase a moment to catch up
+                    if (!user && hasSessionStorage && hasValidLoginTime) {
+                        console.log('⏰ SessionStorage exists but Firebase user not ready - waiting...');
+                        setTimeout(() => {
+                            // Re-check Firebase auth after a delay
+                            this.auth.onAuthStateChanged((retryUser) => {
+                                if (!retryUser && hasSessionStorage) {
+                                    // If still no Firebase user but we have sessionStorage, proceed anyway
+                                    console.log('⚠️ Firebase auth not ready, but sessionStorage exists - proceeding');
+                                    this.isActive = true;
+                                    this.hideLoadingMessage();
+                                }
+                            });
+                        }, 2000);
                         return;
                     }
                     
                     // Check if this is a fresh session
                     if (!this.hasValidSession()) {
-                       
+                        console.log('🆕 Creating new session');
                         this.createSession();
                         this.lastActivity = Date.now();
                     } else {
-                       
+                        console.log('✅ Valid session exists');
                     }
                     
                     this.isActive = true;
