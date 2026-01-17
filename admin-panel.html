@@ -2693,49 +2693,6 @@
             }
         }
 
-        // About form - Save to Firebase
-        const aboutForm = document.getElementById('aboutForm');
-        aboutForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const alert = document.getElementById('aboutAlert');
-            const submitButton = e.target.querySelector('button[type="submit"]');
-            
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            }
-            
-            try {
-                const aboutData = {
-                    studioName: document.getElementById('studioName').value,
-                    description: document.getElementById('aboutDescription').value,
-                    experience: document.getElementById('experience').value
-                };
-                
-                const result = await firebaseDB.updateAboutInfo(aboutData);
-                
-                if (result.success) {
-                    alert.textContent = '✅ About information saved to Firebase!';
-                    alert.style.display = 'block';
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                alert.textContent = '❌ Error: ' + error.message;
-                alert.style.display = 'block';
-                console.error('Error updating about info:', error);
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="fas fa-save"></i> Update About Info';
-                }
-            }
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 3000);
-        });
-
         // Contact form - Save to Firebase
         const contactForm = document.getElementById('contactForm');
         contactForm.addEventListener('submit', async (e) => {
@@ -4893,6 +4850,9 @@
 
                     await window.db.saveAboutInfo(aboutData);
                     showAlert('aboutAlert', 'About information updated successfully!', 'success');
+                    
+                    // Reload the form with updated data
+                    await loadAboutInfoData();
                 } catch (error) {
                     console.error('Error saving about info:', error);
                     showAlert('aboutAlert', 'Error saving about information', 'error');

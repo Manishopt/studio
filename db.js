@@ -389,12 +389,16 @@ async function loadTeamMembers() {
  */
 async function saveAboutInfo(aboutData) {
     try {
+        console.log('🔍 Saving about info:', aboutData);
+        
         // First check if about info already exists
         const existing = await loadAboutInfo();
+        console.log('🔍 Existing about info:', existing);
         
-        if (existing && existing.length > 0) {
+        if (existing) {
+            console.log('📝 Updating existing record with ID:', existing.id);
             // Update existing record
-            const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info?id=eq.${existing[0].id}`, {
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info?id=eq.${existing.id}`, {
                 method: 'PATCH',
                 headers: {
                     'apikey': SUPABASE_KEY,
@@ -417,7 +421,6 @@ async function saveAboutInfo(aboutData) {
             }
 
             const updatedAbout = await response.json();
-           
             return Array.isArray(updatedAbout) ? updatedAbout[0] : updatedAbout;
         } else {
             // Create new record
@@ -460,6 +463,7 @@ async function saveAboutInfo(aboutData) {
  */
 async function loadAboutInfo() {
     try {
+        console.log('🔍 Loading about info from Supabase...');
         const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info?limit=1`, {
             method: 'GET',
             headers: {
@@ -476,8 +480,13 @@ async function loadAboutInfo() {
         }
 
         const aboutInfo = await response.json();
+       
+        
+        const result = aboutInfo.length > 0 ? aboutInfo[0] : null;
       
-        return aboutInfo.length > 0 ? aboutInfo[0] : null;
+        
+        
+        return result;
     } catch (error) {
         console.error('❌ Error in loadAboutInfo:', error);
         return null;
