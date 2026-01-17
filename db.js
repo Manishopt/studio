@@ -77,7 +77,7 @@ async function saveImage(url) {
             throw new Error(`Supabase error: ${error.message || response.statusText}`);
         }
 
-        console.log('Successfully saved to Supabase:', url);
+        
         return response;
     } catch (error) {
         console.error('Error in saveImage:', error);
@@ -121,7 +121,7 @@ async function savePhotoToSupabase(photoData) {
         }
 
         const savedPhoto = await response.json();
-        console.log('✅ Successfully saved photo to Supabase:', savedPhoto);
+        
         return Array.isArray(savedPhoto) ? savedPhoto[0] : savedPhoto;
     } catch (error) {
         console.error('❌ Error in savePhotoToSupabase:', error);
@@ -158,7 +158,7 @@ async function updatePhotoInSupabase(publicId, updates) {
         }
 
         const updatedPhoto = await response.json();
-        console.log('✅ Successfully updated photo in Supabase:', updatedPhoto);
+       
         return Array.isArray(updatedPhoto) ? updatedPhoto[0] : updatedPhoto;
     } catch (error) {
         console.error('❌ Error in updatePhotoInSupabase:', error);
@@ -189,7 +189,7 @@ async function deletePhotoFromSupabase(publicId) {
             throw new Error(`Supabase error: ${error.message || response.statusText}`);
         }
 
-        console.log('✅ Successfully deleted photo from Supabase:', publicId);
+       
     } catch (error) {
         console.error('❌ Error in deletePhotoFromSupabase:', error);
         throw error;
@@ -231,12 +231,256 @@ async function loadPhotosFromSupabase(category = null) {
             uploaded_at: photo.uploaded_at
         }));
         
-        console.log(`✅ Successfully loaded ${formattedPhotos.length} photos from Supabase`);
+      
         return formattedPhotos;
     } catch (error) {
         console.error('❌ Error in loadPhotosFromSupabase:', error);
         // Return empty array on error to allow fallback
         return [];
+    }
+}
+
+// ==================== ABOUT MEMBERS CRUD OPERATIONS ====================
+
+/**
+ * Saves a team member to Supabase about_members table
+ * @param {Object} memberData - Member data object with name, role, image_url, etc.
+ * @returns {Promise<Object>} The saved member data
+ */
+async function saveTeamMember(memberData) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/about_members`, {
+            method: 'POST',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                name: memberData.name,
+                role: memberData.role,
+                image_url: memberData.image_url,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error saving team member to Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+
+        const savedMember = await response.json();
+        
+        
+        return Array.isArray(savedMember) ? savedMember[0] : savedMember;
+    } catch (error) {
+        console.error('❌ Error in saveTeamMember:', error);
+        throw error;
+    }
+}
+
+/**
+ * Updates a team member in Supabase about_members table
+ * @param {number} memberId - The ID of the team member
+ * @param {Object} updates - Object with fields to update
+ * @returns {Promise<Object>} The updated member data
+ */
+async function updateTeamMember(memberId, updates) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/about_members?id=eq.${memberId}`, {
+            method: 'PATCH',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=representation'
+            },
+            body: JSON.stringify({
+                ...updates,
+                updated_at: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error updating team member in Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+
+        const updatedMember = await response.json();
+       
+        return Array.isArray(updatedMember) ? updatedMember[0] : updatedMember;
+    } catch (error) {
+        console.error('❌ Error in updateTeamMember:', error);
+        throw error;
+    }
+}
+
+/**
+ * Deletes a team member from Supabase about_members table
+ * @param {number} memberId - The ID of the team member
+ * @returns {Promise<void>}
+ */
+async function deleteTeamMember(memberId) {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/about_members?id=eq.${memberId}`, {
+            method: 'DELETE',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json',
+                'Prefer': 'return=minimal'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error deleting team member from Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+
+        
+    } catch (error) {
+        console.error('❌ Error in deleteTeamMember:', error);
+        throw error;
+    }
+}
+
+/**
+ * Loads all team members from Supabase about_members table
+ * @returns {Promise<Array>} Array of team member objects
+ */
+async function loadTeamMembers() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/about_members?order=created_at.asc`, {
+            method: 'GET',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error loading team members from Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+
+        const members = await response.json();
+        
+        return members;
+    } catch (error) {
+        console.error('❌ Error in loadTeamMembers:', error);
+        // Return empty array on error to allow fallback
+        return [];
+    }
+}
+
+// ==================== ABOUT INFO CRUD OPERATIONS ====================
+
+/**
+ * Saves or updates the main about information
+ * @param {Object} aboutData - About data object with name, portrait_url, about_text, etc.
+ * @returns {Promise<Object>} The saved about data
+ */
+async function saveAboutInfo(aboutData) {
+    try {
+        // First check if about info already exists
+        const existing = await loadAboutInfo();
+        
+        if (existing && existing.length > 0) {
+            // Update existing record
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info?id=eq.${existing[0].id}`, {
+                method: 'PATCH',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    name: aboutData.name,
+                    portrait_url: aboutData.portrait_url,
+                    about_text: aboutData.about_text,
+                    updated_at: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Error updating about info in Supabase:', error);
+                throw new Error(`Supabase error: ${error.message || response.statusText}`);
+            }
+
+            const updatedAbout = await response.json();
+           
+            return Array.isArray(updatedAbout) ? updatedAbout[0] : updatedAbout;
+        } else {
+            // Create new record
+            const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info`, {
+                method: 'POST',
+                headers: {
+                    'apikey': SUPABASE_KEY,
+                    'Authorization': `Bearer ${SUPABASE_KEY}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                body: JSON.stringify({
+                    name: aboutData.name,
+                    portrait_url: aboutData.portrait_url,
+                    about_text: aboutData.about_text,
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('Error saving about info to Supabase:', error);
+                throw new Error(`Supabase error: ${error.message || response.statusText}`);
+            }
+
+            const savedAbout = await response.json();
+           
+            return Array.isArray(savedAbout) ? savedAbout[0] : savedAbout;
+        }
+    } catch (error) {
+        console.error('❌ Error in saveAboutInfo:', error);
+        throw error;
+    }
+}
+
+/**
+ * Loads the main about information from Supabase
+ * @returns {Promise<Object|null>} About info object or null if not found
+ */
+async function loadAboutInfo() {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/about_info?limit=1`, {
+            method: 'GET',
+            headers: {
+                'apikey': SUPABASE_KEY,
+                'Authorization': `Bearer ${SUPABASE_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            console.error('Error loading about info from Supabase:', error);
+            throw new Error(`Supabase error: ${error.message || response.statusText}`);
+        }
+
+        const aboutInfo = await response.json();
+      
+        return aboutInfo.length > 0 ? aboutInfo[0] : null;
+    } catch (error) {
+        console.error('❌ Error in loadAboutInfo:', error);
+        return null;
     }
 }
 
@@ -248,7 +492,13 @@ if (typeof module !== 'undefined' && module.exports) {
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
         loadPhotosFromSupabase,
-        saveBackgroundPhoto
+        saveBackgroundPhoto,
+        saveTeamMember,
+        updateTeamMember,
+        deleteTeamMember,
+        loadTeamMembers,
+        saveAboutInfo,
+        loadAboutInfo
     };
 }
 // For browser environment
@@ -259,6 +509,12 @@ if (typeof window !== 'undefined') {
         updatePhotoInSupabase, 
         deletePhotoFromSupabase, 
         loadPhotosFromSupabase,
-        saveBackgroundPhoto
+        saveBackgroundPhoto,
+        saveTeamMember,
+        updateTeamMember,
+        deleteTeamMember,
+        loadTeamMembers,
+        saveAboutInfo,
+        loadAboutInfo
     };
 }

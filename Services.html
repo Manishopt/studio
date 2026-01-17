@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Services | TJ Clicks Studio</title>
+
+<link rel="icon" href="https://cdn-icons-png.flaticon.com/512/1042/1042390.png">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+:root {
+    --primary: #ffb6c1;
+    --accent: #0891B2;
+    --dark: #1a1a1a;
+    --light: #f8f9fa;
+    --text: #2d3748;
+    --card: #ffffff;
+    --shadow: 0 10px 30px rgba(0,0,0,0.15);
+    --radius: 18px;
+    --transition: all 0.35s ease;
+    --gradient: linear-gradient(135deg,#ffb6c1,#0891B2);
+}
+
+[data-theme="dark"] {
+    --light: #0f172a;
+    --text: #f8fafc;
+    --card: #1e293b;
+    --shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background: var(--light);
+    color: var(--text);
+}
+
+/* NAV */
+nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    padding: 18px 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    backdrop-filter: blur(10px);
+    z-index: 999;
+}
+
+.nav-logo {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #ff8fa3;
+    cursor: pointer;
+}
+
+.nav-links a {
+    margin-left: 20px;
+    text-decoration: none;
+    color: #ff8fa3;
+    font-weight: 500;
+}
+
+.nav-links a:hover {
+    color: #ff6b8b;
+}
+
+/* MAIN */
+main {
+    max-width: 1200px;
+    margin: 120px auto 60px;
+    padding: 0 20px;
+}
+
+/* INTRO */
+.section-intro {
+    text-align: center;
+    margin-bottom: 70px;
+}
+
+.section-title {
+    font-family: 'Great Vibes', cursive;
+    font-size: 3rem;
+    background: var(--gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.section-intro p {
+    max-width: 700px;
+    margin: 20px auto;
+    font-size: 1rem;
+    line-height: 1.8;
+}
+
+/* SERVICES GRID */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 30px;
+}
+
+.service-card {
+    background: var(--card);
+    padding: 40px 25px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: var(--transition);
+}
+
+.service-card:hover {
+    transform: translateY(-10px);
+}
+
+.service-icon {
+    width: 70px;
+    height: 70px;
+    background: var(--gradient);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    margin: 0 auto 20px;
+}
+
+.service-card h3 {
+    color: var(--primary);
+    margin-bottom: 12px;
+}
+
+.service-card p {
+    font-size: 0.95rem;
+    opacity: 0.9;
+    line-height: 1.6;
+}
+
+/* FOOTER */
+footer {
+    background: var(--dark);
+    color: white;
+    text-align: center;
+    padding: 30px 20px;
+}
+
+footer a {
+    color: var(--primary);
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    nav {
+        padding: 15px 25px;
+    }
+    .section-title {
+        font-size: 2.4rem;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <div class="nav-logo" onclick="location.href='index.html'">TJ Clicks</div>
+    <div class="nav-links">
+        <a href="index.html#portfolio">Portfolio</a>
+        <a href="index.html#services">Services</a>
+        <a href="contact.html">Contact</a>
+    </div>
+</nav>
+
+<main>
+
+<section class="section-intro">
+    <h2 class="section-title">Our Services</h2>
+    <p>We capture emotions, stories, and moments that last forever. Every shoot is handled with creativity, precision, and passion.</p>
+</section>
+
+<section class="services-grid">
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-heart"></i></div>
+        <h3>Pre-Wedding Shoots</h3>
+        <p>Creative and romantic storytelling sessions before your big day.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-ring"></i></div>
+        <h3>Wedding Photography</h3>
+        <p>Elegant coverage capturing every ritual and emotion beautifully.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-baby"></i></div>
+        <h3>Newborn Photography</h3>
+        <p>Soft, safe, and adorable photography of your little miracle.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-person-pregnant"></i></div>
+        <h3>Maternity Shoots</h3>
+        <p>Celebrate motherhood with graceful and elegant portraits.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-shirt"></i></div>
+        <h3>Fashion Photography</h3>
+        <p>Professional shoots for models, designers, and brands.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-camera"></i></div>
+        <h3>Portrait Sessions</h3>
+        <p>Personal, studio, and outdoor portrait photography.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-users"></i></div>
+        <h3>Couple Photoshoots</h3>
+        <p>Capture love stories with artistic couple photography.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-calendar"></i></div>
+        <h3>Event Coverage</h3>
+        <p>Corporate, parties, birthdays, and special events.</p>
+    </div>
+
+    <div class="service-card">
+        <div class="service-icon"><i class="fa-solid fa-box"></i></div>
+        <h3>Product Photography</h3>
+        <p>High-quality visuals for brands, catalogs, and marketing.</p>
+    </div>
+
+</section>
+</main>
+
+<footer>
+    <p>© 2026 TJ Clicks Studio. All Rights Reserved.</p>
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Terms & Conditions</a>
+</footer>
+
+</body>
+</html>
