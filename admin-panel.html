@@ -225,6 +225,42 @@
             font-size: 0.95rem;
         }
 
+        /* Quick Actions */
+        .quick-actions {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-top: 20px;
+        }
+
+        .quick-actions .section-header {
+            margin-bottom: 20px;
+        }
+
+        .quick-actions .section-header h2 {
+            color: #2C3E50;
+            font-size: 1.5rem;
+            margin: 0;
+        }
+
+        .quick-actions .btn {
+            padding: 15px 20px;
+            font-size: 0.9rem;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 50px;
+        }
+
+        .quick-actions .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
         /* Content Sections */
         .content-section {
             background: white;
@@ -1458,16 +1494,10 @@
                     <span>Team Members</span>
                 </a>
             </li>
-            <li>
-                <a href="#" class="menu-link" data-section="contact">
-                    <i class="fas fa-envelope"></i>
-                    <span>Contact Info</span>
-                </a>
-            </li>
-            <li>
+                        <li>
                 <a href="#" class="menu-link" data-section="settings">
-                    <i class="fas fa-cog"></i>
-                    <span>Settings</span>
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>External Services</span>
                 </a>
             </li>
         </ul>
@@ -1529,19 +1559,31 @@
                 </div>
             </div>
 
-            <div class="content-section active">
+            <div class="quick-actions">
                 <div class="section-header">
                     <h2>Quick Actions</h2>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
                     <button class="btn btn-primary" onclick="showSection('photos')">
-                        <i class="fas fa-plus"></i> Add New Photo
+                        <i class="fas fa-images"></i> Manage Photos
                     </button>
                     <button class="btn btn-primary" onclick="showSection('portfolio')">
-                        <i class="fas fa-camera"></i> Manage Portfolio
+                        <i class="fas fa-camera"></i> Portfolio Items
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('categoryThumbnails')">
+                        <i class="fas fa-th"></i> Category Thumbnails
                     </button>
                     <button class="btn btn-primary" onclick="showSection('testimonials')">
-                        <i class="fas fa-quote-left"></i> Add Testimonial
+                        <i class="fas fa-quote-left"></i> Testimonials
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('about')">
+                        <i class="fas fa-user"></i> About Info
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('teamMembers')">
+                        <i class="fas fa-users"></i> Team Members
+                    </button>
+                    <button class="btn btn-primary" onclick="showSection('settings')">
+                        <i class="fas fa-external-link-alt"></i> External Services
                     </button>
                 </div>
             </div>
@@ -1865,46 +1907,7 @@
             </form>
         </div>
 
-        <!-- Contact Info Section -->
-        <div class="content-section" id="contact">
-            <div class="alert alert-success" id="contactAlert"></div>
-            
-            <div class="section-header">
-                <h2>Update Contact Information</h2>
-            </div>
-
-            <form id="contactForm">
-                <div class="form-group">
-                    <label>Phone Number</label>
-                    <input type="tel" id="contactPhone" value="+91 9782978298" required>
-                </div>
-
-                <div class="form-group">
-                    <label>WhatsApp Number</label>
-                    <input type="tel" id="contactWhatsapp" value="+91 9782978298" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="contactEmail" value="tjclickstudio@gmail.com" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Instagram Handle</label>
-                    <input type="text" id="contactInstagram" value="@click_it_9782" required>
-                </div>
-
-                <div class="form-group">
-                    <label>Studio Address</label>
-                    <textarea id="contactAddress" required>Vrinda Gardens, Jagatpura, Jaipur, 302017. Near JNU College</textarea>
-                </div>
-
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save"></i> Update Contact Info
-                </button>
-            </form>
-        </div>
-
+        
         <!-- Team Members Section -->
         <div class="content-section" id="teamMembers">
             <div class="alert alert-success" id="teamMembersAlert"></div>
@@ -1921,34 +1924,29 @@
             </div>
         </div>
 
-        <!-- Settings Section -->
+        <!-- External Links Section -->
         <div class="content-section" id="settings">
-            <div class="alert alert-success" id="settingsAlert"></div>
-            
             <div class="section-header">
-                <h2>Settings</h2>
+                <h2>External Services</h2>
             </div>
 
-            <form id="settingsForm">
-                <div class="form-group">
-                    <label>Website Title</label>
-                    <input type="text" value="TJ Clicks Studio" required>
-                </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <a href="https://console.cloudinary.com/app/c-43570308e3e464966cbb2ef10bab04/assets/media_library/search?q=&view_mode=mosaic" 
+                   target="_blank" 
+                   class="btn btn-primary" 
+                   style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-cloud"></i>
+                    <span>Cloudinary Dashboard</span>
+                </a>
 
-                <div class="form-group">
-                    <label>Change Password</label>
-                    <input type="password" placeholder="Enter new password">
-                </div>
-
-                <div class="form-group">
-                    <label>Confirm Password</label>
-                    <input type="password" placeholder="Confirm new password">
-                </div>
-
-                <button type="submit" class="btn btn-success">
-                    <i class="fas fa-save"></i> Save Settings
-                </button>
-            </form>
+                <a href="https://console.firebase.google.com/project/studio-66a62/authentication/users?fb_gclid=CjwKCAiA3-3KBhBiEiwA2x7FdHbMvKCTD4RBsNzK_L5Ras713sziejX8P8dLNjMUtRA4GIjy6i_9wRoCdSsQAvD_BwE&fb_utm_campaign=Cloud-SS-DR-Firebase-FY26-global-gsem-1713590&fb_utm_content=text-ad&fb_utm_medium=cpc&fb_utm_source=google&fb_utm_term=KW_firebase" 
+                   target="_blank" 
+                   class="btn btn-primary" 
+                   style="text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                    <i class="fas fa-user-shield"></i>
+                    <span>Firebase Authentication</span>
+                </a>
+            </div>
         </div>
     </main>
 
@@ -2065,8 +2063,7 @@
                     'categoryThumbnails': 'Category Thumbnails',
                     'testimonials': 'Manage Testimonials',
                     'about': 'About Information',
-                    'contact': 'Contact Information',
-                    'settings': 'Settings'
+                    'settings': 'External Services'
                 };
                 pageTitle.textContent = titles[sectionId] || 'Dashboard';
                 
@@ -2688,68 +2685,11 @@
                 console.error('Error loading testimonials:', error);
                 const alert = document.getElementById('testimonialsAlert');
                 alert.textContent = '❌ Error loading testimonials: ' + error.message;
-                alert.style.display = 'block';
-                alert.className = 'alert alert-error';
+                if (result.success) {
+                    testimonials = result.data;
+                }
             }
         }
-
-        // Contact form - Save to Firebase
-        const contactForm = document.getElementById('contactForm');
-        contactForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const alert = document.getElementById('contactAlert');
-            const submitButton = e.target.querySelector('button[type="submit"]');
-            
-            if (submitButton) {
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-            }
-            
-            try {
-                const contactData = {
-                    phone: document.getElementById('contactPhone').value,
-                    whatsapp: document.getElementById('contactWhatsapp').value,
-                    email: document.getElementById('contactEmail').value,
-                    instagram: document.getElementById('contactInstagram').value,
-                    address: document.getElementById('contactAddress').value
-                };
-                
-                const result = await firebaseDB.updateContactInfo(contactData);
-                
-                if (result.success) {
-                    alert.textContent = '✅ Contact information saved to Firebase!';
-                    alert.style.display = 'block';
-                } else {
-                    throw new Error(result.error);
-                }
-            } catch (error) {
-                alert.textContent = '❌ Error: ' + error.message;
-                alert.style.display = 'block';
-                console.error('Error updating contact info:', error);
-            } finally {
-                if (submitButton) {
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="fas fa-save"></i> Update Contact Info';
-                }
-            }
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 3000);
-        });
-
-        // Settings form
-        const settingsForm = document.getElementById('settingsForm');
-        settingsForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const alert = document.getElementById('settingsAlert');
-            alert.textContent = 'Settings saved successfully!';
-            alert.style.display = 'block';
-            
-            setTimeout(() => {
-                alert.style.display = 'none';
-            }, 3000);
-        });
 
         // Delete row function
         function deleteRow(btn) {
