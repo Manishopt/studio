@@ -46,31 +46,102 @@ body {
 nav {
     position: fixed;
     top: 0;
-    width: 100%;
-    padding: 18px 50px;
+    left: 0;
+    right: 0;
+    background: transparent;
+    padding: 20px 50px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    backdrop-filter: blur(10px);
-    z-index: 999;
+    z-index: 1000;
+    transition: all 0.3s ease;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: none;
 }
 
 .nav-logo {
+    font-family: 'Montserrat', sans-serif;
     font-size: 1.8rem;
     font-weight: 700;
     color: #ff8fa3;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 8px rgba(255, 143, 163, 0.3);
+    transition: var(--transition);
     cursor: pointer;
 }
 
+.nav-logo:hover {
+    transform: scale(1.05);
+    color: #ff6b8b;
+    text-shadow: 2px 2px 8px rgba(255, 143, 163, 0.5);
+}
+
+.nav-links {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
 .nav-links a {
-    margin-left: 20px;
-    text-decoration: none;
     color: #ff8fa3;
+    text-decoration: none;
+    position: relative;
+    font-size: 1rem;
     font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    transition: var(--transition);
+    padding: 5px 0;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 2px;
+    background: #ff6b8b;
+    transition: width 0.3s ease;
 }
 
 .nav-links a:hover {
     color: #ff6b8b;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+/* Mobile Menu */
+.menu-toggle {
+    display: none;
+    flex-direction: column;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+.menu-toggle span {
+    width: 25px;
+    height: 3px;
+    background: #ff8fa3;
+    margin: 4px 0;
+    transition: var(--transition);
+    border-radius: 3px;
+}
+
+.menu-toggle.active span:nth-child(1) {
+    transform: rotate(45deg) translate(8px, 8px);
+}
+
+.menu-toggle.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-toggle.active span:nth-child(3) {
+    transform: rotate(-45deg) translate(8px, -8px);
 }
 
 /* MAIN */
@@ -91,6 +162,7 @@ main {
     font-size: 3rem;
     background: var(--gradient);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -166,8 +238,63 @@ footer a:hover {
 /* RESPONSIVE */
 @media (max-width: 768px) {
     nav {
-        padding: 15px 25px;
+        padding: 12px 15px;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        height: 60px;
+        box-sizing: border-box;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
     }
+
+    .nav-logo {
+        font-size: 1.3rem;
+    }
+
+    .menu-toggle {
+        display: flex;
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 60px;
+        left: -100%;
+        flex-direction: column;
+        background: var(--dark);
+        width: 100%;
+        text-align: center;
+        padding: 20px 0;
+        transition: 0.3s;
+        z-index: 999;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+    .nav-links.active {
+        left: 0;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+
+    .nav-links a {
+        color: #ff8fa3;
+        padding: 15px;
+        display: block;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 500;
+        transition: var(--transition);
+    }
+
+    .nav-links a:hover {
+        color: #ff6b8b;
+        background: rgba(255, 143, 163, 0.1);
+    }
+
+    .nav-links a::after {
+        display: none;
+    }
+
     .section-title {
         font-size: 2.4rem;
     }
@@ -179,10 +306,15 @@ footer a:hover {
 
 <nav>
     <div class="nav-logo" onclick="location.href='index.html'">TJ Clicks</div>
-    <div class="nav-links">
-        <a href="index.html#portfolio">Portfolio</a>
-        <a href="index.html#services">Services</a>
+    <div class="nav-links" id="navLinks">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
         <a href="contact.html">Contact</a>
+    </div>
+    <div class="menu-toggle" id="menuToggle">
+        <span></span>
+        <span></span>
+        <span></span>
     </div>
 </nav>
 
@@ -257,6 +389,25 @@ footer a:hover {
     <a href="#">Privacy Policy</a> |
     <a href="#">Terms & Conditions</a>
 </footer>
+
+<script>
+// Mobile Menu Toggle
+const menuToggle = document.getElementById('menuToggle');
+const navLinks = document.getElementById('navLinks');
+
+menuToggle.addEventListener('click', function() {
+    menuToggle.classList.toggle('active');
+    navLinks.classList.toggle('active');
+});
+
+// Close menu when clicking on a link
+document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', function() {
+        menuToggle.classList.remove('active');
+        navLinks.classList.remove('active');
+    });
+});
+</script>
 
 </body>
 </html>
