@@ -14,15 +14,11 @@
 
     <script>
         /* ── Supabase client ─────────────────────────────────────────── */
-        /* Credentials are fetched from /api/config (reads Vercel env vars server-side) */
-        let sbClient = null;
-
-        async function initSupabase() {
-            const res = await fetch('/api/config');
-            if (!res.ok) throw new Error('Failed to load config (' + res.status + ')');
-            const { url, key } = await res.json();
-            sbClient = window.supabase.createClient(url, key);
-        }
+        /* Supabase anon key is intentionally public — security is enforced by RLS policies */
+        const sbClient = window.supabase.createClient(
+            'https://xaiperlmtvanjuvvrvpl.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+        );
 
         /* ── Lockout constants ─── */
         const ATTEMPTS_KEY  = 'tjc_sa_attempts';
@@ -438,63 +434,30 @@
 
         if (lockedOut) startCountdown();
 
-        /* ── Boot: fetch config then run app ── */
-        (async function boot() {
-            /* ⚡ Fast path: already logged in → skip network entirely */
-            if (sessionStorage.getItem('adminLoggedIn') === 'true') {
-                window.location.replace('admin-panel.html');
-                return;
-            }
+        /* ── On load: instant sessionStorage check + background OAuth handler ── */
+        /* ⚡ If already logged in, redirect immediately with no delay */
+        if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+            window.location.replace('admin-panel.html');
+        }
 
-            /* Load Supabase credentials from /api/config (Vercel env vars) */
-            try {
-                await initSupabase();
-            } catch (e) {
-                checkingOverlay.style.display = 'none';
-                loginContainer.style.display  = 'block';
-                showError('<i class="fas fa-exclamation-triangle"></i> Failed to load configuration. Please refresh or contact the developer.');
-                return;
-            }
-
-            /* Check for an existing Supabase session */
-            try {
-                const { data: { session } } = await sbClient.auth.getSession();
-                if (session && session.user) {
-                    const isAuthorized = await verifyAdminStatus(session.user);
-                    if (isAuthorized) {
-                        sessionStorage.setItem('adminLoggedIn', 'true');
-                        sessionStorage.setItem('loginTime', Date.now().toString());
-                        window.location.replace('admin-panel.html');
-                        return;
-                    } else {
-                        await sbClient.auth.signOut();
-                        showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + session.user.email + '</strong> is not authorized for admin access.');
-                    }
+        /* Handle post-Google-OAuth redirect silently in background */
+        sbClient.auth.onAuthStateChange(async function(event, session) {
+            if (event === 'SIGNED_IN' && session && session.user) {
+                const isAuthorized = await verifyAdminStatus(session.user);
+                if (isAuthorized) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    sessionStorage.setItem('loginTime', Date.now().toString());
+                    sessionStorage.removeItem(ATTEMPTS_KEY);
+                    sessionStorage.removeItem(LOCKOUT_KEY);
+                    showSuccess('<i class="fas fa-check-circle"></i> Welcome! Redirecting to dashboard...');
+                    setTimeout(() => window.location.replace('admin-panel.html'), 800);
+                } else {
+                    await sbClient.auth.signOut();
+                    showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + session.user.email + '</strong> is not authorized for admin access.');
+                    triggerShake();
                 }
-            } catch (e) {}
-
-            checkingOverlay.style.display = 'none';
-            loginContainer.style.display  = 'block';
-
-            /* Auth state listener (handles post-OAuth redirect) */
-            sbClient.auth.onAuthStateChange(async function(event, session) {
-                if (event === 'SIGNED_IN' && session && session.user) {
-                    const isAuthorized = await verifyAdminStatus(session.user);
-                    if (isAuthorized) {
-                        sessionStorage.setItem('adminLoggedIn', 'true');
-                        sessionStorage.setItem('loginTime', Date.now().toString());
-                        sessionStorage.removeItem(ATTEMPTS_KEY);
-                        sessionStorage.removeItem(LOCKOUT_KEY);
-                        showSuccess('<i class="fas fa-check-circle"></i> Welcome! Redirecting to dashboard...');
-                        setTimeout(() => window.location.replace('admin-panel.html'), 800);
-                    } else {
-                        await sbClient.auth.signOut();
-                        showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + session.user.email + '</strong> is not authorized for admin access.');
-                        triggerShake();
-                    }
-                }
-            });
-        })();
+            }
+        });
 
 
 
