@@ -11,13 +11,14 @@
 
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <!-- Credentials loaded from gitignored file (never commit supabase-config.js) -->
-    <script src="supabase-config.js"></script>
 
     <script>
-        /* ── Supabase client (credentials come from supabase-config.js) ─── */
-        /* Use sbClient to avoid collision with the UMD global `supabase` namespace */
-        const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        /* ── Supabase client ───────────────────────────────────────── */
+        /* Note: anon key is safe to be public — security comes from Supabase RLS policies */
+        const sbClient = window.supabase.createClient(
+            'https://xaiperlmtvanjuvvrvpl.supabase.co',
+            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhhaXBlcmxtdHZhbmp1dnZydnBsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NDg5MDEsImV4cCI6MjA3ODEyNDkwMX0.mKv3Exuex2-dQNwZowWRdQRrEkZmf4rI59ro8EYXqCw'
+        );
 
         /* ── Lockout constants ─── */
         const ATTEMPTS_KEY  = 'tjc_sa_attempts';
@@ -435,6 +436,11 @@
 
         /* ── Session check on load ── */
         (async function checkSession() {
+            /* ⚡ Fast path: if sessionStorage says logged in, redirect instantly */
+            if (sessionStorage.getItem('adminLoggedIn') === 'true') {
+                window.location.replace('admin-panel.html');
+                return;
+            }
             try {
                 const { data: { session } } = await sbClient.auth.getSession();
                 if (session && session.user) {
