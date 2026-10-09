@@ -4,43 +4,71 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Login | TJ Clicks Studio</title>
+    <meta name="description" content="Admin login for TJ Clicks Studio. Authorised personnel only.">
     <link rel="icon" type="image/png" href="Image/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <!-- Credentials loaded from gitignored file (never commit supabase-config.js) -->
+    <script src="supabase-config.js"></script>
+
     <script>
-        // Firebase Configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyD_oBr_xQZZyFKBeMS9Vqa_IgiUUCofrQY",
-            authDomain: "studio-66a62.firebaseapp.com",
-            projectId: "studio-66a62",
-            storageBucket: "studio-66a62.firebasestorage.app",
-            messagingSenderId: "472272986177",
-            appId: "1:472272986177:web:96823be1a135b00bb466c0"
-        };
+        /* ── Supabase client (credentials come from supabase-config.js) ─── */
+        /* Use sbClient to avoid collision with the UMD global `supabase` namespace */
+        const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+        /* ── Lockout constants ─── */
+        const ATTEMPTS_KEY  = 'tjc_sa_attempts';
+        const LOCKOUT_KEY   = 'tjc_sa_lockout_until';
+        const MAX_ATTEMPTS  = 5;
+        const LOCKOUT_MS    = 15 * 60 * 1000;
+
+        /* ── Whitelisted admin emails ─── */
+        const KNOWN_ADMIN_EMAILS = ['tjclickstudio@gmail.com'];
+
+        function getRemainingLockout() {
+            const until = parseInt(sessionStorage.getItem(LOCKOUT_KEY) || '0', 10);
+            return Math.max(0, until - Date.now());
+        }
+
+        function formatCountdown(ms) {
+            const totalSec = Math.ceil(ms / 1000);
+            const m = Math.floor(totalSec / 60);
+            const s = totalSec % 60;
+            return m + ':' + String(s).padStart(2, '0');
+        }
+
+        /* ── Verify admin status (mirrors .kt logic) ─── */
+        async function verifyAdminStatus(user) {
+            if (!user || !user.email) return false;
+            const userEmail = user.email.trim().toLowerCase();
+            if (KNOWN_ADMIN_EMAILS.includes(userEmail)) return true;
+            if (user.app_metadata && user.app_metadata.role === 'super_admin') return true;
+            try {
+                const { data, error } = await sbClient
+                    .from('admin_users')
+                    .select('id, email, is_active')
+                    .eq('email', userEmail)
+                    .maybeSingle();
+                if (!error && data && data.is_active !== false) return true;
+            } catch (e) {}
+            try {
+                const { data, error } = await sbClient
+                    .from('admin_config')
+                    .select('value')
+                    .eq('key', 'super_admin_email')
+                    .maybeSingle();
+                if (!error && data && data.value && data.value.toLowerCase() === userEmail) return true;
+            } catch (e) {}
+            return false;
+        }
     </script>
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        html, body {
-            overflow-x: hidden;
-            width: 100%;
-        }
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { overflow-x: hidden; width: 100%; }
 
         body {
             font-family: 'Poppins', sans-serif;
@@ -50,537 +78,490 @@
             align-items: center;
             justify-content: center;
             padding: 10px;
-            box-sizing: border-box;
+        }
+
+        #checkingOverlay {
+            position: fixed; inset: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 18px; z-index: 999;
+        }
+        #checkingOverlay .spinner {
+            width: 44px; height: 44px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.75s linear infinite;
+        }
+        #checkingOverlay p {
+            color: rgba(255,255,255,0.85);
+            font-size: 0.95rem; font-weight: 500; letter-spacing: 0.5px;
         }
 
         .login-container {
             background: white;
             border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             overflow: hidden;
-            width: min(100% - 20px, 450px);
+            width: min(100% - 20px, 420px);
             margin-inline: auto;
-            box-sizing: border-box;
             animation: slideUp 0.6s ease;
         }
 
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes shake {
+            0%,100% { transform: translateX(0); }
+            15%  { transform: translateX(-10px); }
+            30%  { transform: translateX(10px); }
+            45%  { transform: translateX(-6px); }
+            60%  { transform: translateX(6px); }
+            80%  { transform: translateX(-3px); }
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes blink {
+            0%,100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+
+        .login-container.shake { animation: shake 0.55s cubic-bezier(0.36,0.07,0.19,0.97); }
 
         .login-header {
-            background: linear-gradient(135deg, #ffb6c1 0%, #0891B2 100%); /* pink start */
-            padding: 40px 30px;
-            text-align: center;
-            color: white;
+            background: linear-gradient(135deg, #ffb6c1 0%, #0891B2 100%);
+            padding: 44px 30px 36px;
+            text-align: center; color: white;
         }
-
-        .login-header i {
-            font-size: 3rem;
-            margin-bottom: 15px;
-        }
-
-        .login-header h1 {
-            font-size: 1.8rem;
-            margin-bottom: 5px;
-        }
-
-        .login-header p {
-            font-size: 0.95rem;
-            opacity: 0.9;
-        }
+        .login-header i { font-size: 3.2rem; margin-bottom: 14px; display: block; }
+        .login-header h1 { font-size: 1.9rem; margin-bottom: 6px; }
+        .login-header p  { font-size: 0.95rem; opacity: 0.9; }
 
         .login-body {
-            padding: 40px 30px;
-            overflow: visible;
+            padding: 40px 36px 36px;
+            display: flex; flex-direction: column; align-items: center;
         }
 
-        .form-group {
-            margin-bottom: 25px;
-            position: relative;
+        .alert {
+            width: 100%; padding: 13px 15px; border-radius: 10px;
+            font-size: 0.9rem; display: none; margin-bottom: 22px; line-height: 1.5;
+        }
+        .alert.error   { background:#fee; color:#c33; border-left:4px solid #c33; }
+        .alert.success { background:#efe; color:#2a7a2a; border-left:4px solid #3c3; }
+        .alert.info    { background:#e8f4fd; color:#1a73e8; border-left:4px solid #1a73e8; }
+
+        .attempts-badge { display: block; margin-top: 4px; font-size: 0.8rem; opacity: 0.75; }
+
+        .lockout-pill {
+            display: none; align-items: center; gap: 6px;
+            background: #fff3e0; color: #e65100;
+            border: 1px solid #ffcc80; border-radius: 100px;
+            padding: 5px 14px; font-size: 0.82rem; font-weight: 600;
+            margin-bottom: 18px;
+        }
+        .lockout-pill .blink-dot {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #ff9800; animation: blink 1.4s ease-in-out infinite;
         }
 
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: #2C3E50;
-            font-weight: 600;
-            font-size: 0.95rem;
+        .tagline {
+            text-align: center; color: #666; font-size: 0.95rem;
+            margin-bottom: 28px; line-height: 1.6;
         }
+        .tagline strong { color: #2C3E50; }
 
-        .input-wrapper {
-            position: relative;
-            width: 100%;
-            display: block;
+        .or-divider {
+            display: flex; align-items: center; gap: 12px;
+            width: 100%; margin: 20px 0;
         }
+        .or-line { flex: 1; height: 1px; background: #e0e0e0; }
+        .or-text  { font-size: 0.78rem; font-weight: 600; color: #aaa; letter-spacing: 1px; text-transform: uppercase; }
 
-        .input-wrapper i {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #999;
-            font-size: 1.1rem;
-            pointer-events: none;
-            z-index: 2;
+        .field-group { width: 100%; margin-bottom: 16px; }
+        .field-label {
+            display: block; font-size: 0.75rem; font-weight: 600;
+            letter-spacing: 0.7px; text-transform: uppercase; color: #888; margin-bottom: 6px;
         }
-
-        .toggle-password {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #999;
-            font-size: 1.1rem;
-            transition: color 0.3s ease;
-            z-index: 2;
-            pointer-events: auto;
+        .input-wrap { position: relative; }
+        .field-input {
+            width: 100%; padding: 13px 44px 13px 14px;
+            border: 1.5px solid #e0e0e0; border-radius: 10px;
+            font-size: 0.95rem; font-family: 'Poppins', sans-serif;
+            color: #333; outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
         }
-
-        .toggle-password:hover {
-            color: #D4A574;
+        .field-input::placeholder { color: #bbb; }
+        .field-input:focus { border-color: #0891B2; box-shadow: 0 0 0 3px rgba(8,145,178,0.12); }
+        .field-input.err  { border-color: #e53935; background: #fff5f5; }
+        .toggle-pass {
+            position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; cursor: pointer; color: #aaa; padding: 4px;
+            display: flex; align-items: center; transition: color 0.15s;
         }
+        .toggle-pass:hover { color: #555; }
 
-        .form-group input {
-            width: 100%;
-            padding: 15px 50px 15px 45px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 1rem;
+        .google-btn {
+            width: 100%; padding: 15px 20px; background: white;
+            color: #3c4043; border: 2px solid #dadce0; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.25s ease; display: flex; align-items: center;
+            justify-content: center; gap: 12px;
             font-family: 'Poppins', sans-serif;
-            transition: all 0.3s ease;
-            box-sizing: border-box;
-            position: relative;
-            z-index: 1;
-            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
         }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: #ffb6c1;
-            box-shadow: 0 0 15px rgba(255,182,193,0.2); /* pink shadow */
-        }
-
-            .input-wrapper i, .toggle-password {
-                font-size: 1.05rem;
-            }
-
-        .remember-forgot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-            font-size: 0.9rem;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            color: #666;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .forgot-password {
-            color: #0891B2;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .forgot-password:hover {
-            color: #D4A574;
-        }
-
-        .login-btn {
-            width: 100%;
-            padding: 15px;
-            background: #ffb6c1; /* pink */
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 5px 15px rgba(255,182,193,0.3);
-        }
-
-        .login-btn:hover {
+        .google-btn:hover:not(:disabled) {
+            border-color: #4285F4; box-shadow: 0 6px 20px rgba(66,133,244,0.25);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(255,182,193,0.4);
-            background: #e599b0; /* darker pink on hover */
         }
+        .google-btn:active:not(:disabled) { transform: translateY(0); }
+        .google-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .google-icon { width: 22px; height: 22px; flex-shrink: 0; }
 
-        .login-btn:active {
-            transform: translateY(0);
+        .submit-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #0891B2 0%, #764ba2 100%);
+            color: #fff; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; font-family: 'Poppins', sans-serif;
+            cursor: pointer; margin-top: 4px;
+            transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(8,145,178,0.3);
+            display: flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .submit-btn:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+        .submit-btn:active:not(:disabled) { transform: translateY(0); }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .security-note {
+            display: flex; align-items: center; gap: 8px;
+            margin-top: 18px; color: #aaa; font-size: 0.8rem;
         }
 
         .back-home {
-            text-align: center;
-            margin-top: 25px;
-            padding-top: 25px;
-            border-top: 1px solid #e0e0e0;
+            width: 100%; text-align: center;
+            margin-top: 28px; padding-top: 24px; border-top: 1px solid #e8e8e8;
         }
-
-        .contact-info {
-            margin-top: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 0.9rem;
+        .back-home a {
+            color: #0891B2; text-decoration: none;
+            font-size: 0.9rem; font-weight: 500; transition: color 0.3s;
         }
+        .back-home a:hover { color: #D4A574; }
+        .contact-info { margin-top: 18px; color: #888; font-size: 0.85rem; line-height: 1.8; }
+        .contact-info a { color: #0891B2; text-decoration: none; transition: color .3s; }
+        .contact-info a:hover { color: #D4A574; }
 
-        .contact-info p {
-            margin: 5px 0;
-        }
-
-        .contact-info a {
-            color: #0891B2;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-
-        .contact-info a:hover {
-            color: #D4A574;
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c33;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 0.9rem;
-            border-left: 4px solid #c33;
-        }
-
-        .success-message {
-            background: #efe;
-            color: #3c3;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            display: none;
-            font-size: 0.9rem;
-            border-left: 4px solid #3c3;
-        }
-
-        /* extra mobile responsiveness */
-        @media (max-width: 600px) {
-            body {
-                padding: 5px;
-            }
-            
-            .login-container {
-                width: 100%;
-                margin: 5px;
-            }
-            
-            .login-header {
-                padding: 24px 18px;
-            }
-
-            .login-header i { font-size: 2.2rem; }
-            .login-header h1 { font-size: 1.4rem; }
-
-            .login-body {
-                padding: 15px;
-            }
-
-            .form-group input {
-                padding: 12px 50px 12px 44px;
-                font-size: 0.95rem;
-            }
-
-            .input-wrapper i, .toggle-password {
-                font-size: 1.05rem;
-            }
-
-            .login-btn {
-                padding: 12px;
-                font-size: 1rem;
-            }
-        }
-
-        @media (max-width: 360px) {
-            .login-header { padding: 18px 14px; }
-            .login-body { padding: 16px; }
-            .form-group label { font-size: 0.9rem; }
-            .login-btn { font-size: 0.95rem; padding: 10px; }
+        @media (max-width: 480px) {
+            .login-header { padding: 28px 18px 22px; }
+            .login-header i { font-size: 2.4rem; }
+            .login-header h1 { font-size: 1.5rem; }
+            .login-body { padding: 26px 20px 24px; }
+            .google-btn { padding: 13px 16px; font-size: 0.95rem; }
         }
     </style>
 </head>
 <body>
-    <div class="login-container">
+
+    <div id="checkingOverlay">
+        <div class="spinner"></div>
+        <p>Verifying Admin Credentials...</p>
+    </div>
+
+    <div class="login-container" id="loginContainer" style="display:none;">
         <div class="login-header">
             <i class="fas fa-user-shield"></i>
             <h1>Admin Login</h1>
             <p>TJ Clicks Studio</p>
         </div>
-        
+
         <div class="login-body">
-            <div class="error-message" id="errorMessage">
-                <i class="fas fa-exclamation-circle"></i> Invalid username or password
+            <div class="alert error"   id="alertError"></div>
+            <div class="alert success" id="alertSuccess"></div>
+            <div class="alert info"    id="alertInfo"></div>
+
+            <div class="lockout-pill" id="lockoutPill">
+                <span class="blink-dot"></span>
+                Locked &mdash; <span id="lockoutCountdown">15:00</span>
             </div>
-            
-            <div class="success-message" id="successMessage">
-                <i class="fas fa-check-circle"></i> Login successful! Redirecting...
+
+            <p class="tagline">
+                Sign in with your <strong>Google account</strong> to access the admin dashboard.<br>
+                Access is restricted to approved personnel only.
+            </p>
+
+            <button class="google-btn" id="googleBtn" onclick="signInWithGoogle()">
+                <svg class="google-icon" viewBox="0 0 24 24">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                </svg>
+                Continue with Google
+            </button>
+
+            <div class="or-divider">
+                <div class="or-line"></div>
+                <span class="or-text">or email</span>
+                <div class="or-line"></div>
             </div>
-            
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="username" name="username" required placeholder="Enter your username">
+
+            <form id="loginForm" onsubmit="signInWithEmail(event)" style="width:100%;">
+                <div class="field-group">
+                    <label class="field-label" for="emailInput">Admin Email</label>
+                    <div class="input-wrap">
+                        <input class="field-input" id="emailInput" type="email"
+                            placeholder="admin@tjclicksstudio.com"
+                            autocomplete="email" required />
                     </div>
                 </div>
-
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" name="password" required placeholder="Enter your password">
-                        <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                <div class="field-group">
+                    <label class="field-label" for="passwordInput">Password</label>
+                    <div class="input-wrap">
+                        <input class="field-input" id="passwordInput" type="password"
+                            placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                            autocomplete="current-password" required />
+                        <button type="button" class="toggle-pass" id="togglePass" tabindex="-1">
+                            <i class="fas fa-eye" id="toggleIcon"></i>
+                        </button>
                     </div>
                 </div>
-
-                <div class="remember-forgot">
-                    <label class="remember-me">
-                        <input type="checkbox" id="rememberMe">
-                        Remember me
-                    </label>
-                    <a href="#" class="forgot-password">Forgot Password?</a>
-                </div>
-
-                <button type="submit" class="login-btn">
-                    <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    Sign In with Password <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
 
+            <div class="security-note">
+                <i class="fas fa-lock"></i> Secured by Supabase Authentication
+            </div>
+
             <div class="back-home">
-                <a href="index.html">
-                    <i class="fas fa-arrow-left"></i> Back to Website
-                </a>
+                <a href="index.html"><i class="fas fa-arrow-left"></i> Back to Website</a>
                 <div class="contact-info">
-                    <p><i class="fas fa-phone"></i> Contact: <a href="tel:+919460657127">+91 9460657127</a></p>
-                    <p><i class="fab fa-instagram"></i> Instagram: <a href="https://www.instagram.com/tj_clicks_studio?igsh=bTlpdGZwNDI4MjYw" target="_blank">@tj_clicks_studio</a></p>
-                    <p><i class="fas fa-envelope"></i> Email: <a href="mailto:tjclickstudio@gmail.com">tjclickstudio@gmail.com</a></p>
+                    <p><i class="fas fa-phone"></i> <a href="tel:+919460657127">+91 9460657127</a></p>
+                    <p><i class="fab fa-instagram"></i> <a href="https://www.instagram.com/tj_clicks_studio?igsh=bTlpdGZwNDI4MjYw" target="_blank">@tj_clicks_studio</a></p>
+                    <p><i class="fas fa-envelope"></i> <a href="mailto:tjclickstudio@gmail.com">tjclickstudio@gmail.com</a></p>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-const passwordInput = document.getElementById("password");
-const togglePassword = document.getElementById("togglePassword");
+        /* ── DOM refs ── */
+        const alertError    = document.getElementById('alertError');
+        const alertSuccess  = document.getElementById('alertSuccess');
+        const alertInfo     = document.getElementById('alertInfo');
+        const googleBtn     = document.getElementById('googleBtn');
+        const submitBtn     = document.getElementById('submitBtn');
+        const emailInput    = document.getElementById('emailInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const lockoutPill   = document.getElementById('lockoutPill');
+        const lockoutCd     = document.getElementById('lockoutCountdown');
+        const loginContainer  = document.getElementById('loginContainer');
+        const checkingOverlay = document.getElementById('checkingOverlay');
+        const togglePass    = document.getElementById('togglePass');
+        const toggleIcon    = document.getElementById('toggleIcon');
 
-let hideTimer = null;
-let manuallyVisible = false;
+        /* ── Alert helpers ── */
+        function hideAll() {
+            [alertError, alertSuccess, alertInfo].forEach(el => el.style.display = 'none');
+        }
+        function showError(msg)   { hideAll(); alertError.innerHTML   = msg; alertError.style.display   = 'block'; }
+        function showSuccess(msg) { hideAll(); alertSuccess.innerHTML = msg; alertSuccess.style.display = 'block'; }
+        function showInfo(msg)    { hideAll(); alertInfo.innerHTML    = msg; alertInfo.style.display    = 'block'; }
 
-/* =========================
-   👁️ Eye icon toggle
-========================= */
-togglePassword.addEventListener("click", () => {
-  manuallyVisible = !manuallyVisible;
-
-  passwordInput.type = manuallyVisible ? "text" : "password";
-
-  togglePassword.classList.toggle("fa-eye", !manuallyVisible);
-  togglePassword.classList.toggle("fa-eye-slash", manuallyVisible);
-});
-
-/* =========================
-   ⌨️ Google-style typing
-   show LAST char for 0.5s
-========================= */
-passwordInput.addEventListener("input", () => {
-  // agar eye se show hai, typing logic skip
-  if (manuallyVisible) return;
-
-  // clear previous timer
-  if (hideTimer) clearTimeout(hideTimer);
-
-  // temporarily show password
-  passwordInput.type = "text";
-
-  hideTimer = setTimeout(() => {
-    passwordInput.type = "password";
-  }, 500); // 👈 500ms = Google feel
-});
-
-        // Handle form submission
-        const loginForm = document.getElementById('loginForm');
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-
-        loginForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-            
-            // Rate limiting
-            const loginAttempts = parseInt(sessionStorage.getItem('loginAttempts') || '0');
-            const maxAttempts = 5;
-            const lockoutTime = 15 * 60 * 1000; // 15 minutes
-            
-            // Check if locked out
-            const lockoutEnd = sessionStorage.getItem('lockoutEnd');
-            if (lockoutEnd && Date.now() < parseInt(lockoutEnd)) {
-                const remainingTime = Math.ceil((parseInt(lockoutEnd) - Date.now()) / 60000);
-                errorMessage.style.display = 'block';
-                errorMessage.innerHTML = `<i class="fas fa-lock"></i> Account locked. Try again in ${remainingTime} minutes`;
-                return;
-            }
-            
-            // Validate that both fields are filled
-            if (!username || !password) {
-                successMessage.style.display = 'none';
-                errorMessage.style.display = 'block';
-                errorMessage.innerHTML = '<i class="fas fa-exclamation-circle"></i> Please enter both username and password';
-                
-                loginForm.style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    loginForm.style.animation = '';
-                }, 500);
-                return;
-            }
-            
-            // Input validation
-            if (username.length < 3 || password.length < 6) {
-                successMessage.style.display = 'none';
-                errorMessage.style.display = 'block';
-                errorMessage.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Username must be at least 3 characters and password at least 6 characters';
-                
-                loginForm.style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    loginForm.style.animation = '';
-                }, 500);
-                return;
-            }
-            
-            // Async authentication function
-            const authenticateUser = async () => {
-                try {
-                    // Show loading state
-                    errorMessage.style.display = 'none';
-                    successMessage.style.display = 'block';
-                    successMessage.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
-                    
-                    // Firebase Authentication
-                    if (username.includes('@')) {
-                        // Email format - use Firebase Auth directly
-                        await auth.signInWithEmailAndPassword(username, password);
-                    } else {
-                        // Username format - convert to email
-                        await auth.signInWithEmailAndPassword(`${username}@studio.com`, password);
-                    }
-                    
-                    // Successful login
-                    sessionStorage.removeItem('loginAttempts');
-                    sessionStorage.removeItem('lockoutEnd');
-                    
-                    errorMessage.style.display = 'none';
-                    successMessage.style.display = 'block';
-                    successMessage.innerHTML = '<i class="fas fa-check-circle"></i> Login successful! Redirecting...';
-                    
-                    sessionStorage.setItem('adminLoggedIn', 'true');
-                    sessionStorage.setItem('loginTime', Date.now().toString());
-                    
-                    setTimeout(() => {
-                        window.location.href = 'admin-panel.html';
-                    }, 1500);
-                    
-                } catch (error) {
-                    throw error;
-                }
-            };
-            
-            // Execute authentication
-            authenticateUser().catch((error) => {
-                // Increment login attempts
-                const newAttempts = loginAttempts + 1;
-                sessionStorage.setItem('loginAttempts', newAttempts.toString());
-                
-                // Handle different error types
-                let errorMessageText = '';
-                switch(error.code) {
-                    case 'auth/user-not-found':
-                        errorMessageText = 'User not found. Check your email.';
-                        break;
-                    case 'auth/wrong-password':
-                        errorMessageText = 'Incorrect password. Please try again.';
-                        break;
-                    case 'auth/too-many-requests':
-                        errorMessageText = 'Too many requests. Please try again later.';
-                        break;
-                    case 'auth/user-disabled':
-                        errorMessageText = 'Account disabled. Contact administrator.';
-                        break;
-                    default:
-                        errorMessageText = `Authentication failed. ${newAttempts >= maxAttempts - 1 ? '0 attempts remaining.' : `${maxAttempts - newAttempts} attempts remaining.`}`;
-                }
-                
-                // Lock out after max attempts
-                if (newAttempts >= maxAttempts) {
-                    sessionStorage.setItem('lockoutEnd', (Date.now() + lockoutTime).toString());
-                    errorMessageText = 'Too many failed attempts. Account locked for 15 minutes';
-                }
-                
-                successMessage.style.display = 'none';
-                errorMessage.style.display = 'block';
-                errorMessage.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${errorMessageText}`;
-                
-                // Shake animation
-                loginForm.style.animation = 'shake 0.5s';
-                setTimeout(() => {
-                    loginForm.style.animation = '';
-                }, 500);
-            });
-        });
-
-        // Remember me functionality
-        const rememberMe = document.getElementById('rememberMe');
-        const usernameInput = document.getElementById('username');
-
-        // Load saved username if exists
-        if (localStorage.getItem('rememberedUsername')) {
-            usernameInput.value = localStorage.getItem('rememberedUsername');
-            rememberMe.checked = true;
+        /* ── Shake ── */
+        function triggerShake() {
+            loginContainer.classList.remove('shake');
+            void loginContainer.offsetWidth;
+            loginContainer.classList.add('shake');
+            setTimeout(() => loginContainer.classList.remove('shake'), 600);
         }
 
-        loginForm.addEventListener('submit', function() {
-            if (rememberMe.checked) {
-                localStorage.setItem('rememberedUsername', usernameInput.value);
-            } else {
-                localStorage.removeItem('rememberedUsername');
+        /* ── Password toggle ── */
+        togglePass.addEventListener('click', () => {
+            const isText = passwordInput.type === 'text';
+            passwordInput.type = isText ? 'password' : 'text';
+            toggleIcon.className = isText ? 'fas fa-eye' : 'fas fa-eye-slash';
+        });
+
+        /* ── Lockout state ── */
+        let attempts   = parseInt(sessionStorage.getItem(ATTEMPTS_KEY) || '0', 10);
+        let lockedOut  = getRemainingLockout() > 0;
+        let cdInterval = null;
+
+        function applyLockoutUI() {
+            lockedOut = true;
+            lockoutPill.style.display = 'flex';
+            googleBtn.disabled  = true;
+            submitBtn.disabled  = true;
+            emailInput.disabled = true;
+            passwordInput.disabled = true;
+            passwordInput.placeholder = 'Access locked';
+            submitBtn.innerHTML = '<i class="fas fa-lock"></i> Locked &mdash; <span id="btnCountdown"></span>';
+        }
+
+        function clearLockoutUI() {
+            lockedOut = false;
+            lockoutPill.style.display = 'none';
+            googleBtn.disabled  = false;
+            submitBtn.disabled  = false;
+            emailInput.disabled = false;
+            passwordInput.disabled = false;
+            passwordInput.placeholder = '\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022';
+            submitBtn.innerHTML = 'Sign In with Password <i class="fas fa-arrow-right"></i>';
+            attempts = 0;
+        }
+
+        function startCountdown() {
+            applyLockoutUI();
+            if (cdInterval) clearInterval(cdInterval);
+            cdInterval = setInterval(() => {
+                const remaining = getRemainingLockout();
+                const formatted = formatCountdown(remaining);
+                lockoutCd.textContent = formatted;
+                const btnCd = document.getElementById('btnCountdown');
+                if (btnCd) btnCd.textContent = formatted;
+                if (remaining <= 0) {
+                    clearInterval(cdInterval);
+                    sessionStorage.removeItem(LOCKOUT_KEY);
+                    sessionStorage.removeItem(ATTEMPTS_KEY);
+                    clearLockoutUI();
+                    hideAll();
+                }
+            }, 500);
+        }
+
+        if (lockedOut) startCountdown();
+
+        /* ── Session check on load ── */
+        (async function checkSession() {
+            try {
+                const { data: { session } } = await sbClient.auth.getSession();
+                if (session && session.user) {
+                    const isAuthorized = await verifyAdminStatus(session.user);
+                    if (isAuthorized) {
+                        sessionStorage.setItem('adminLoggedIn', 'true');
+                        sessionStorage.setItem('loginTime', Date.now().toString());
+                        window.location.replace('admin-panel.html');
+                        return;
+                    } else {
+                        await sbClient.auth.signOut();
+                        showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + session.user.email + '</strong> is not authorized for admin access.');
+                    }
+                }
+            } catch (e) {}
+            checkingOverlay.style.display = 'none';
+            loginContainer.style.display  = 'block';
+        })();
+
+        /* ── Auth state listener ── */
+        sbClient.auth.onAuthStateChange(async function(event, session) {
+            if (event === 'SIGNED_IN' && session && session.user) {
+                const isAuthorized = await verifyAdminStatus(session.user);
+                if (isAuthorized) {
+                    sessionStorage.setItem('adminLoggedIn', 'true');
+                    sessionStorage.setItem('loginTime', Date.now().toString());
+                    sessionStorage.removeItem(ATTEMPTS_KEY);
+                    sessionStorage.removeItem(LOCKOUT_KEY);
+                    showSuccess('<i class="fas fa-check-circle"></i> Welcome! Redirecting to dashboard...');
+                    setTimeout(() => window.location.replace('admin-panel.html'), 800);
+                } else {
+                    await sbClient.auth.signOut();
+                    showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + session.user.email + '</strong> is not authorized for admin access.');
+                    triggerShake();
+                }
             }
         });
 
-        // Add shake animation
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes shake {
-                0%, 100% { transform: translateX(0); }
-                10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
-                20%, 40%, 60%, 80% { transform: translateX(10px); }
+        /* ── Google OAuth ── */
+        const GOOGLE_SVG = '<svg class="google-icon" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Continue with Google';
+
+        function resetGoogleBtn() {
+            googleBtn.disabled = false;
+            googleBtn.innerHTML = GOOGLE_SVG;
+        }
+
+        async function signInWithGoogle() {
+            if (lockedOut) return;
+            googleBtn.disabled = true;
+            googleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Redirecting to Google...';
+            hideAll();
+            try {
+                const { error } = await sbClient.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: { redirectTo: window.location.href }
+                });
+                if (error) {
+                    showError('<i class="fas fa-exclamation-circle"></i> ' + error.message);
+                    resetGoogleBtn();
+                }
+            } catch (err) {
+                showError('<i class="fas fa-exclamation-circle"></i> Failed to initiate Google sign-in. Please try again.');
+                resetGoogleBtn();
             }
-        `;
-        document.head.appendChild(style);
+        }
+
+        /* ── Email + Password Sign-in ── */
+        async function signInWithEmail(e) {
+            e.preventDefault();
+            if (lockedOut) return;
+
+            const cleanEmail = emailInput.value.trim().toLowerCase();
+            const password   = passwordInput.value;
+            if (!cleanEmail || !password) return;
+
+            submitBtn.disabled  = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Authenticating...';
+            emailInput.classList.remove('err');
+            passwordInput.classList.remove('err');
+            hideAll();
+
+            const { data, error: authError } = await sbClient.auth.signInWithPassword({
+                email: cleanEmail,
+                password: password,
+            });
+
+            if (authError || !data || !data.user) {
+                attempts++;
+                sessionStorage.setItem(ATTEMPTS_KEY, String(attempts));
+
+                if (attempts >= MAX_ATTEMPTS) {
+                    const until = Date.now() + LOCKOUT_MS;
+                    sessionStorage.setItem(LOCKOUT_KEY, String(until));
+                    showError('<i class="fas fa-lock"></i> Too many failed attempts. Locked out for <strong>' + formatCountdown(LOCKOUT_MS) + '</strong>.');
+                    passwordInput.value = '';
+                    startCountdown();
+                } else {
+                    const remaining = MAX_ATTEMPTS - attempts;
+                    emailInput.classList.add('err');
+                    passwordInput.classList.add('err');
+                    showError('<i class="fas fa-exclamation-triangle"></i> ' + (authError ? authError.message : 'Invalid email or password.') +
+                        '<span class="attempts-badge">' + remaining + ' attempt' + (remaining !== 1 ? 's' : '') + ' remaining before lockout.</span>');
+                    submitBtn.disabled  = false;
+                    submitBtn.innerHTML = 'Sign In with Password <i class="fas fa-arrow-right"></i>';
+                }
+
+                triggerShake();
+                return;
+            }
+
+            const isAuthorized = await verifyAdminStatus(data.user);
+            if (!isAuthorized) {
+                await sbClient.auth.signOut();
+                showError('<i class="fas fa-ban"></i> Access Denied: <strong>' + cleanEmail + '</strong> is not authorized for admin access.');
+                submitBtn.disabled  = false;
+                submitBtn.innerHTML = 'Sign In with Password <i class="fas fa-arrow-right"></i>';
+                triggerShake();
+                return;
+            }
+
+            sessionStorage.removeItem(ATTEMPTS_KEY);
+            sessionStorage.removeItem(LOCKOUT_KEY);
+            sessionStorage.setItem('adminLoggedIn', 'true');
+            sessionStorage.setItem('loginTime', Date.now().toString());
+            showSuccess('<i class="fas fa-check-circle"></i> Login successful! Redirecting...');
+            setTimeout(() => window.location.replace('admin-panel.html'), 700);
+        }
     </script>
 </body>
 </html>
